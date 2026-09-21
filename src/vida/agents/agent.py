@@ -21,6 +21,7 @@ from vida.agents.goals import Goal, Preference
 from vida.agents.needs import Need, clamp01
 from vida.agents.personality import Personality
 from vida.simulation.config import NeedName
+from vida.world.actions import ActionOutcome
 
 LifeStage = Literal["infancy", "adolescence", "youth", "adulthood", "old_age", "dead"]
 STAGE_ORDER: tuple[LifeStage, ...] = ("infancy", "adolescence", "youth", "adulthood", "old_age", "dead")
@@ -178,3 +179,20 @@ class AgentState(BaseModel):
     def add_inventory(self, deltas: dict[str, int]) -> None:
         for item, delta in sorted(deltas.items()):
             self.inventory[item] = max(0, self.inventory.get(item, 0) + delta)
+
+    def apply_outcome(self, outcome: ActionOutcome) -> None:
+        """Incorpora el resultado objetivo: necesidades, inventario, dinero, posición y emoción.
+
+        Es el único punto donde ``location_id`` se actualiza, y siempre a partir
+        de lo que el mundo resolvió (``outcome.new_location``).
+        """
+        self.apply_need_deltas(outcome.need_deltas)
+        self.add_inventory(outcome.inventory_deltas)
+        self.money = round(max(0.0, self.money + outcome.money_delta), 6)
+        if outcome.new_location is not None:
+            self.location_id = outcome.new_location
+        self.emotion.nudge(outcome.valence, arousal=abs(outcome.valence))
+        self.bump_counter(f"action:{outcome.action}")
+        if outcome.success:
+            self.bump_counter(f"success:{outcome.action}")
+

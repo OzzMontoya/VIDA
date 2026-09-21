@@ -74,15 +74,15 @@ class ActionProposal(BaseModel):
     rationale: str = ""
 
     def key(self) -> str:
-        """Clave canónica y ordenable, p. ej. ``acquire:bread@market``."""
-        parts = [self.kind]
+        """Clave canónica y ordenable: ``consume:bread``, ``socialize->a02``, ``move@market``."""
+        key = str(self.kind)
         if self.resource:
-            parts.append(self.resource)
+            key += f":{self.resource}"
         if self.target_agent:
-            parts.append(f"->{self.target_agent}")
+            key += f"->{self.target_agent}"
         if self.target_location:
-            parts.append(f"@{self.target_location}")
-        return ":".join(parts)
+            key += f"@{self.target_location}"
+        return key
 
 
 class ActionOutcome(BaseModel):
