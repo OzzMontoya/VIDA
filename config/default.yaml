@@ -1,0 +1,49 @@
+# Configuración por defecto de una corrida VIDA-0.1.
+# Todo lo que afecta al resultado de la simulación vive aquí; el hash de este
+# archivo (canonizado) se guarda con cada corrida para garantizar reproducibilidad.
+
+run:
+  seed: 42
+  ticks: 720            # 30 días simulados a 24 ticks/día
+  ticks_per_day: 24
+  snapshot_every_ticks: 24
+
+world:
+  preset: village_small   # 12 lugares: casas, plaza, mercado, escuela, hospital, trabajo
+
+agents:
+  n_agents: 10
+  initial_age_days:
+    min: 20
+    max: 40
+  starting_money: 20.0
+
+# Necesidades: level 1.0 = satisfecha, 0.0 = crítica.
+needs:
+  hunger:    { decay_per_tick: 0.030, critical_below: 0.10 }
+  energy:    { decay_per_tick: 0.025, critical_below: 0.10 }
+  health:    { decay_per_tick: 0.002, critical_below: 0.10 }
+  social:    { decay_per_tick: 0.015, critical_below: 0.10 }
+  safety:    { decay_per_tick: 0.005, critical_below: 0.10 }
+  knowledge: { decay_per_tick: 0.001, critical_below: 0.10 }
+
+lifecycle:
+  stage_thresholds_days:
+    adolescence: 12
+    youth: 18
+    adulthood: 30
+    old_age: 65
+  max_age_days: 85
+  critical_ticks: 12        # ticks seguidos con una necesidad crítica antes de morir
+  old_age_health_factor: 3.0
+
+memory:
+  retrieve_k: 8
+  weights: { recency: 1.0, importance: 1.0, relevance: 1.0 }
+  recency_decay: 0.99
+  forget_below: 0.2
+  forget_after_days: 7
+
+decision:
+  engine: rules_v1
+  epsilon: 0.01

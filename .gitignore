@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.venv/
+venv/
+
+# Datos y logs generados por las corridas
+data/runs/
+logs/
+
+# Entorno local
+.env
+
+# Editores / SO
+.vscode/
+.idea/
+desktop.ini
+Thumbs.db
