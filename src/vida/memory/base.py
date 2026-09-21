@@ -47,7 +47,7 @@ class AgentMemory:
         self.agent_id = agent_id
         self.cfg = cfg
         self.records: dict[str, MemoryRecord] = {}
-        self.forgotten: list[str] = []
+        self.forgotten: list[MemoryRecord] = []  # se conservan para evaluación, no para el agente
         self._seq = 0
 
     # --- escritura ---------------------------------------------------------
@@ -108,6 +108,5 @@ class AgentMemory:
             if r.kind == "episodic" and r.importance < self.cfg.forget_below and r.tick < horizon
         ]
         for rid in forgotten:
-            del self.records[rid]
-        self.forgotten.extend(forgotten)
+            self.forgotten.append(self.records.pop(rid))
         return forgotten
