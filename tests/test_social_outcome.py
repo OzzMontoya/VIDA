@@ -74,8 +74,14 @@ def test_rationale_text_never_matters(small_world):
     assert o1.model_dump(exclude={"details"}) == o2.model_dump(exclude={"details"})
     assert o1.success
     d = social.update_relationships(a, o1, agents)
-    assert d["a01->a02"] == {"trust": 0.02, "affection": 0.05, "familiarity": 0.05}
+    # Ajustes asintóticos: desde 0.5 el delta nominal se aplica tal cual; desde 0.0 se duplica.
+    assert d["a01->a02"] == {"trust": 0.02, "affection": 0.05, "familiarity": 0.1}
     assert d["a02->a01"]["affection"] == 0.04
+    # Repetir la interacción acerca a 1.0 sin saturar de golpe.
+    for _ in range(30):
+        social.update_relationships(a, o1, agents)
+    rel = a.relationship_with("a02")
+    assert 0.9 < rel.familiarity < 1.0 and rel.trust < 1.0
 
 
 def test_learning_updates_preferences_and_skills(small_world):

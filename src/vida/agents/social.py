@@ -25,8 +25,13 @@ def update_relationships(agent: AgentState, outcome: ActionOutcome, agents: dict
     tick = outcome.tick
 
     def apply(src: AgentState, dst_id: str, **kw: float) -> None:
+        """Cambios asintóticos: los incrementos se atenúan al acercarse a 1 y los descensos al acercarse a 0."""
         rel = src.relationship_with(dst_id)
-        changed = rel.adjust(**kw)
+        scaled = {}
+        for name, delta in kw.items():
+            current = getattr(rel, name)
+            scaled[name] = round(delta * ((1.0 - current) if delta > 0 else current) * 2.0, 6)
+        changed = rel.adjust(**scaled)
         rel.last_interaction_tick = tick
         if changed:
             deltas[_pair(src.id, dst_id)] = changed

@@ -61,10 +61,13 @@ def test_beliefs_are_refuted_and_confirmed_independently_of_truth(small_world):
     beliefs.refute("bread", "market")
     assert beliefs.belief_at("bread", "market").confidence == 0.24
     beliefs.refute("bread", "market")
-    assert beliefs.belief_at("bread", "market") is None  # desaparece por debajo de 0.15
+    assert beliefs.belief_at("bread", "market").confidence == 0.1  # se debilita, nunca desaparece
     beliefs.told("bread", "school", by="a02", event_id="e9", tick=5)
     assert beliefs.best_location("bread").location_id == "school"
-    # Una observación directa domina sobre lo contado.
+    # Una observación directa domina sobre lo contado: ver que no hay pan debilita el rumor.
     beliefs.observe_resources("school", {"fruit": 2}, tick=6)
-    assert beliefs.belief_at("bread", "school") is None
+    weakened = beliefs.belief_at("bread", "school")
+    assert weakened.confidence == 0.35 and weakened.source == "observed" and weakened.source_agent is None
     assert beliefs.belief_at("fruit", "school").source == "observed"
+    # Si el rumor y el mercado real ya están débiles, el agente sigue sabiendo dónde buscar.
+    assert beliefs.best_location("bread").location_id == "school"

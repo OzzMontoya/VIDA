@@ -89,8 +89,18 @@ class RuleBasedEngine:
         for subject in subjects:
             pref = agent.preferences.get(subject)
             if pref is not None:
-                bonus += 0.2 * pref.valence * pref.strength
+                bonus += 0.08 * pref.valence * pref.strength
         return bonus
+
+    @staticmethod
+    def _recently_unanswered(ctx: DecisionContext, other: str, horizon: int = 24) -> bool:
+        """Evita insistir a quien no respondió en las últimas ``horizon`` horas."""
+        required = {"action:ask_info", f"agent:{other}", "outcome:no_reply"}
+        return any(required.issubset(m.tags) and m.tick >= ctx.tick - horizon for m in ctx.memories)
+
+    @staticmethod
+    def _food_in_inventory(agent: AgentState) -> int:
+        return sum(agent.inventory.get(f, 0) for f in FOOD_EFFECTS)
 
     def _food_belief(self, agent: AgentState, location_id: str) -> tuple[str | None, float]:
         """Mejor alimento creído disponible en un lugar y su confianza."""
@@ -123,12 +133,14 @@ class RuleBasedEngine:
                     add((u("hunger") + 0.02) * 2.0 * FOOD_EFFECTS[food]["hunger"] / 0.4,
                         ActionProposal(kind="consume", resource=food), [f"res:{food}"], {"action:consume", f"res:{food}"})
         if "acquire" in ctx.available_actions:
+            held = self._food_in_inventory(agent)
             for food in sorted(PURCHASABLE):
                 stock = p.visible_resources.get(food, 0)
                 price = ctx.prices.get(food, 0.0)
                 if stock > 0 and agent.money >= price:
-                    stock_up = 0.15 if sum(agent.inventory.get(f, 0) for f in FOOD_EFFECTS) == 0 else 0.0
-                    add((u("hunger") + stock_up) * 1.2, ActionProposal(kind="acquire", resource=food),
+                    stock_up = 0.15 if held == 0 else 0.0
+                    hoard_factor = 0.15 if held >= 2 else 1.0  # con reservas, comprar más deja de ser prioritario
+                    add((u("hunger") + stock_up) * 1.2 * hoard_factor, ActionProposal(kind="acquire", resource=food),
                         [f"res:{food}", f"loc:{p.location_id}"], {"action:acquire", f"res:{food}"})
         if "work" in ctx.available_actions:
             money_pressure = max(0.0, 1.0 - agent.money / 20.0) * 0.6 + 0.1
@@ -147,11 +159,13 @@ class RuleBasedEngine:
                 score = (u("social") + 0.05) * (0.5 + P.extraversion) * (0.7 + 0.6 * affection)
                 add(score, ActionProposal(kind="socialize", target_agent=other),
                     [f"agent:{other}"], {"action:socialize", f"agent:{other}"})
-        if "ask_info" in ctx.available_actions and u("hunger") > 0.15:
+        if "ask_info" in ctx.available_actions and u("hunger") > 0.15 and self._food_in_inventory(agent) == 0:
             for food in sorted(FOOD_EFFECTS):
                 best = agent.beliefs.best_location(food)
                 if best is None or best.confidence < 0.5:
                     for other in p.visible_agents:
+                        if self._recently_unanswered(ctx, other):
+                            continue
                         add(u("hunger") * 0.6, ActionProposal(kind="ask_info", target_agent=other, resource=food),
                             [f"agent:{other}"], {"action:ask_info", f"agent:{other}"})
         if "share_info" in ctx.available_actions:
@@ -183,14 +197,19 @@ class RuleBasedEngine:
                 score = u("energy") * 0.9 + u("safety") * 0.3
             elif ltype == "market" and arrival_open:
                 food, conf = self._food_belief(agent, loc_id)
+                held = self._food_in_inventory(agent)
                 if food and agent.money >= ctx.prices.get(food, 0.0):
-                    stock_up = 0.15 if sum(agent.inventory.get(f, 0) for f in FOOD_EFFECTS) == 0 else 0.0
-                    score = (u("hunger") + stock_up) * conf * 0.9
+                    stock_up = 0.15 if held == 0 else 0.0
+                    hoard_factor = 0.15 if held >= 2 else 1.0
+                    score = (u("hunger") + stock_up) * conf * 0.9 * hoard_factor
+                if held == 0 and agent.money >= min(ctx.prices.values(), default=0.0):
+                    # Exploración: aunque la creencia sea débil, un mercado se vuelve a comprobar.
+                    score = max(score, u("hunger") * 0.3)
             elif ltype == "workplace" and arrival_open and agent.life_stage in {"youth", "adulthood", "old_age"}:
                 money_pressure = max(0.0, 1.0 - agent.money / 20.0) * 0.6 + 0.1
                 score = (u("safety") * 0.5 + money_pressure) * (0.6 + 0.8 * P.conscientiousness) * 0.8
                 food, conf = self._food_belief(agent, loc_id)
-                if food and agent.money >= ctx.prices.get(food, 0.0):
+                if food and agent.money >= ctx.prices.get(food, 0.0) and self._food_in_inventory(agent) < 2:
                     score = max(score, u("hunger") * conf * 0.8)
             elif ltype == "school" and arrival_open:
                 score = (u("knowledge") + 0.1) * (0.5 + P.openness) * 0.8

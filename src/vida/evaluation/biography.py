@@ -32,6 +32,7 @@ class Biography(BaseModel):
     identity_tags: list[str] = Field(default_factory=list)
     core_values: dict[str, float] = Field(default_factory=dict)
     reputation: float = 0.5
+    final_money: float = 0.0
     lived_days: list[str] = Field(default_factory=list)
     notable_events: list[str] = Field(default_factory=list)
     remembers: list[str] = Field(default_factory=list)
@@ -75,7 +76,8 @@ def build_biography(repo: RunRepository, run_id: str, agent_id: str, names: dict
         initial_age_days=first.age_days(tpd), final_age_days=final.age_days(tpd),
         identity_tags=list(final.identity.self_description_tags),
         core_values={k: round(v, 3) for k, v in sorted(final.identity.core_values.items())},
-        reputation=round(final.reputation, 3), forgotten_count=repo.forgotten_count(run_id, agent_id),
+        reputation=round(final.reputation, 3), final_money=round(final.money, 2),
+        forgotten_count=repo.forgotten_count(run_id, agent_id),
     )
     bio.stages = [(0, first.life_stage)] + [(e.day, e.note) for e in events if e.event_type == "stage_change"]
     death = agents_meta[agent_id].get("death_tick")
@@ -95,13 +97,21 @@ def build_biography(repo: RunRepository, run_id: str, agent_id: str, names: dict
 def _fill_lived(bio: Biography, events: list[EventRecord], memories: list[MemoryRecord]) -> None:
     bio.lived_days = [m.content for m in sorted(memories, key=lambda m: m.tick) if m.kind == "autobiographical"]
     episodic = {m.id: m for m in memories if m.kind == "episodic"}
-    notable = sorted(
+    ranked = sorted(
         (e for e in events if e.event_type == "action" and e.outcome is not None and e.outcome.action != "idle"),
         key=lambda e: (-max((episodic[m].importance for m in e.memories_created if m in episodic), default=0.0), e.seq),
-    )[:8]
-    for e in sorted(notable, key=lambda e: e.seq):
+    )
+    notable: list[tuple[int, str]] = []
+    seen: set[str] = set()
+    for e in ranked:
         text = next((episodic[m].content for m in e.memories_created if m in episodic), e.outcome.key())
-        bio.notable_events.append(f"día {e.day}, hora {e.hour:02d}: {text}")
+        if text in seen:
+            continue  # un mismo tipo de suceso repetido no aporta más
+        seen.add(text)
+        notable.append((e.seq, f"día {e.day}, hora {e.hour:02d}: {text}"))
+        if len(notable) == 8:
+            break
+    bio.notable_events = [t for _, t in sorted(notable)]
 
 
 def _fill_memory(bio: Biography, memories: list[MemoryRecord]) -> None:
@@ -170,7 +180,7 @@ def render(bio: Biography) -> str:
     if bio.death:
         L.append(f"Murió el día {bio.death[0]} ({bio.death[1]}).")
     L.append(f"Identidad observada: {', '.join(bio.identity_tags) or 'sin rasgos destacados aún'}. "
-             f"Valores: {bio.core_values}. Reputación: {bio.reputation}.")
+             f"Valores: {bio.core_values}. Reputación: {bio.reputation}. Dinero final: {bio.final_money:.2f}.")
 
     L.append("\n1) QUÉ VIVIÓ")
     L.extend(f"  - {d}" for d in bio.lived_days)

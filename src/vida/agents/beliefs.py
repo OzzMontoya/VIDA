@@ -14,6 +14,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 BeliefSource = Literal["observed", "told", "prior"]
+MIN_CONFIDENCE = 0.1  # una creencia debilitada nunca desaparece del todo
 
 
 class ResourceBelief(BaseModel):
@@ -44,7 +45,12 @@ class WorldModel(BaseModel):
 
     # --- observación -------------------------------------------------------
     def observe_resources(self, location_id: str, resources: dict[str, int], tick: int) -> None:
-        """Lo observado sobrescribe lo contado. Ausencia observada borra la creencia."""
+        """Lo observado sobrescribe lo contado.
+
+        La ausencia observada debilita la creencia pero no la borra: el agente
+        aprende que "hoy no había", no que "nunca hay". Así puede volver a
+        comprobar el lugar cuando lo necesite.
+        """
         for resource, stock in sorted(resources.items()):
             if stock > 0:
                 self.resources.setdefault(resource, {})[location_id] = ResourceBelief(
@@ -52,8 +58,13 @@ class WorldModel(BaseModel):
                     source="observed", tick=tick,
                 )
         for resource in sorted(self.resources):
-            if location_id in self.resources[resource] and resources.get(resource, 0) <= 0:
-                del self.resources[resource][location_id]
+            belief = self.resources[resource].get(location_id)
+            if belief is not None and resources.get(resource, 0) <= 0:
+                belief.confidence = max(MIN_CONFIDENCE, round(belief.confidence * 0.5, 6))
+                belief.source = "observed"
+                belief.source_agent = None
+                belief.source_event_id = None
+                belief.tick = tick
 
     def observe_agent(self, other_id: str, location_id: str, tick: int) -> None:
         model = self.model_of(other_id)
@@ -93,12 +104,11 @@ class WorldModel(BaseModel):
         return self.resources.get(resource, {}).get(location_id)
 
     def refute(self, resource: str, location_id: str) -> None:
+        """Un fracaso al actuar sobre la creencia la debilita fuertemente (sin borrarla)."""
         belief = self.belief_at(resource, location_id)
         if belief is None:
             return
-        belief.confidence = round(belief.confidence * 0.3, 6)
-        if belief.confidence < 0.15:
-            del self.resources[resource][location_id]
+        belief.confidence = max(MIN_CONFIDENCE, round(belief.confidence * 0.3, 6))
 
     def confirm(self, resource: str, location_id: str) -> None:
         belief = self.belief_at(resource, location_id)

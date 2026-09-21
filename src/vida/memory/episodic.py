@@ -10,7 +10,9 @@ from vida.agents.agent import AgentState
 from vida.memory.base import AgentMemory, MemoryRecord
 from vida.world.actions import ActionOutcome
 
-NEGATIVE_KINDS = {"resource_absent", "rejected", "blocked", "insufficient_funds", "no_reply"}
+# Peso extra de importancia por resultado adverso: los fracasos graves se recuerdan más.
+NEGATIVE_WEIGHT = {"resource_absent": 0.5, "rejected": 0.4, "insufficient_funds": 0.3, "blocked": 0.2, "no_reply": 0.15}
+NEGATIVE_KINDS = set(NEGATIVE_WEIGHT)
 
 
 def outcome_tags(outcome: ActionOutcome) -> set[str]:
@@ -26,8 +28,7 @@ def outcome_tags(outcome: ActionOutcome) -> set[str]:
 
 def importance_of(outcome: ActionOutcome) -> float:
     impact = sum(abs(v) for v in outcome.need_deltas.values()) + abs(outcome.money_delta) / 10.0
-    if outcome.kind in NEGATIVE_KINDS:
-        impact += 0.5
+    impact += NEGATIVE_WEIGHT.get(outcome.kind, 0.0)
     if outcome.details.get("attributed_source_agent"):
         impact += 0.2
     return min(1.0, round(impact, 6))

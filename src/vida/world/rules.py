@@ -136,10 +136,12 @@ def _acquire(world, agent, proposal, ctx, perception, base) -> ActionOutcome:
         return ActionOutcome(**base, kind="insufficient_funds", success=False, resource=resource,
                              valence=-0.4, details={**details, "price": price})
     loc.take(resource, 1)
+    held_food = sum(agent.inventory.get(f, 0) for f in FOOD_EFFECTS)
+    valence = 0.5 if held_food == 0 else 0.15  # comprar con reservas satisface poco
     return ActionOutcome(
         **base, kind="ok", success=True, resource=resource,
-        inventory_deltas={resource: 1}, money_delta=-price, valence=0.5,
-        details={**details, "price": price},
+        inventory_deltas={resource: 1}, money_delta=-price, valence=valence,
+        details={**details, "price": price, "held_before": held_food},
         world_delta={"resources": {loc.id: {resource: loc.stock(resource)}}},
     )
 
@@ -207,7 +209,7 @@ def _ask_info(world, agent, proposal, ctx, perception, base) -> ActionOutcome:
             "intent": reply.kind if reply else "none", "deceptive": False, "was_true": None,
         }
         return ActionOutcome(**base, kind="no_reply", success=False, target_agent=other_id, resource=resource,
-                             need_deltas={"social": 0.05}, valence=-0.1,
+                             need_deltas={"social": 0.05}, valence=-0.3,
                              details={"responded": False})
     was_true = reply.claimed_location in world.truth_locations(resource)
     world.state.info_ledger[ctx.event_id] = {
