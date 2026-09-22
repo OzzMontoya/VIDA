@@ -73,7 +73,7 @@ def test_negative_memories_lower_expectation(small_world, small_cfg):
     ctx = _ctx(world, agents, small_cfg, "a01")
     engine = RuleBasedEngine(small_cfg.decision)
     _, before = engine.decide(ctx, hub.sub("d"))
-    ctx.memories = [ctx.memory.add("episodic", 1, "mal", importance=0.8, valence=-1.0, tags={"loc:market"})
+    ctx.memories = [ctx.memory.add("episodic", 1, "mal", importance=0.8, valence=-1.0, tags={"action:move", "loc:market"})
                     for _ in range(3)]
     _, after = engine.decide(ctx, hub.sub("d"))
     assert after.scores["move@market"] < before.scores["move@market"]

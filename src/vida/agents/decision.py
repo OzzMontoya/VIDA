@@ -77,12 +77,13 @@ class RuleBasedEngine:
 
     @staticmethod
     def _expectation(ctx: DecisionContext, tags: set[str]) -> float:
-        """Factor en [0.2, 1.8]: lo vivido pesa en lo que se elige.
+        """Factor en [0.3, 1.4]: lo vivido pesa en lo que se elige.
 
         Combina (a) la valencia de las memorias recuperadas con esas etiquetas,
         (b) las conclusiones reflexivas del agente sobre esa acción (peso doble) y
-        (c) la tasa de éxito propia predicha por el automodelo. Sin memoria, el
-        factor es 1.0 y el agente decide sólo por necesidades y personalidad.
+        (c) la tasa de éxito propia predicha por el automodelo, que sólo penaliza
+        (una acción que siempre sale bien no gana prioridad por ello). Sin memoria
+        el factor es 1.0 y el agente decide sólo por necesidades y personalidad.
         """
         weighted = [(m.valence, 1.0) for m in ctx.memories if tags.issubset(m.tags)]
         action_tags = {t for t in tags if t.startswith("action:")}
@@ -91,10 +92,36 @@ class RuleBasedEngine:
         factor = 1.0
         if weighted:
             mean = sum(v * w for v, w in weighted) / sum(w for _, w in weighted)
-            factor *= 1.0 + 0.6 * mean
+            factor *= 1.0 + 0.4 * mean
         if action_tags and ctx.memory.records:
-            factor *= 0.5 + predict_success(ctx.memory, tags)  # 0.5..1.5 según éxito propio previo
-        return max(0.2, min(1.8, factor))
+            factor *= min(1.0, 0.5 + predict_success(ctx.memory, tags))  # 0.5..1.0: sólo penaliza fracasos previos
+        return max(0.3, min(1.4, factor))
+
+    @staticmethod
+    def _asked_recently(ctx: DecisionContext, resource: str, horizon: int = 12, limit: int = 2) -> bool:
+        """No insistir: como máximo ``limit`` preguntas por el mismo recurso en ``horizon`` horas."""
+        required = {"action:ask_info", f"res:{resource}"}
+        recent = [m for m in ctx.memory.by_kind("episodic") if required.issubset(m.tags) and m.tick >= ctx.tick - horizon]
+        return len(recent) >= limit
+
+    @staticmethod
+    def _survival_override(ctx: DecisionContext, cands: dict[str, tuple[float, ActionProposal]]) -> None:
+        """Una necesidad crítica domina: las acciones que la atienden se multiplican por 3."""
+        agent = ctx.agent
+        hungry = agent.needs["hunger"].level < 0.15 and sum(agent.inventory.get(f, 0) for f in FOOD_EFFECTS) == 0
+        food_places = {loc for loc, info in ctx.location_info.items() if info["type"] in {"market", "workplace"}}
+        for key, (score, prop) in list(cands.items()):
+            boost = 1.0
+            if agent.needs["hunger"].level < 0.15 and prop.kind in {"consume", "acquire"}:
+                boost = 3.0
+            elif hungry and prop.kind == "move" and prop.target_location in food_places:
+                boost = 3.0
+            elif agent.needs["energy"].level < 0.15 and prop.kind == "rest":
+                boost = 3.0
+            elif agent.needs["health"].level < 0.15 and (prop.kind == "seek_care" or (prop.kind == "move" and ctx.location_info.get(prop.target_location or "", {}).get("type") == "hospital")):
+                boost = 3.0
+            if boost != 1.0:
+                cands[key] = (round(score * boost + 0.05, 6), prop)
 
     @staticmethod
     def _preference_bonus(agent: AgentState, subjects: list[str]) -> float:
@@ -176,6 +203,8 @@ class RuleBasedEngine:
             for food in sorted(FOOD_EFFECTS):
                 best = agent.beliefs.best_location(food)
                 if best is None or best.confidence < 0.5:
+                    if self._asked_recently(ctx, food):
+                        continue
                     for other in p.visible_agents:
                         if self._recently_unanswered(ctx, other):
                             continue
@@ -232,7 +261,7 @@ class RuleBasedEngine:
                 score = (u("social") + 0.02) * (0.5 + P.extraversion) * 0.6
             if score <= 0.0:
                 continue
-            score = score * self._expectation(ctx, {f"loc:{loc_id}"}) - 0.02 * dist
+            score = score * self._expectation(ctx, {"action:move", f"loc:{loc_id}"}) - 0.02 * dist
             score += self._preference_bonus(agent, [f"loc:{loc_id}"])
             proposal = ActionProposal(kind="move", target_location=loc_id)
             cands[proposal.key()] = (max(0.0, round(score, 6)), proposal)
@@ -245,6 +274,7 @@ class RuleBasedEngine:
         cands.update(self._move_scores(ctx))
         if not cands:
             cands["idle"] = (0.0, ActionProposal(kind="idle"))
+        self._survival_override(ctx, cands)
         return cands
 
     def decide(self, ctx: DecisionContext, rng: random.Random) -> tuple[ActionProposal, DecisionRecord]:
