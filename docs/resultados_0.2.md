@@ -172,6 +172,21 @@ Tamaños de efecto escasez frente a abundancia: supervivencia d = −0.84, inten
 
 Observación: la escasez mata a casi la mitad de la población, desplaza la vida social hacia la búsqueda de información, erosiona la confianza y deja memorias más escasas pero más importantes (más fracasos). El engaño sube poco y con mucha varianza: en el motor por reglas la mentira depende de la honestidad inicial y de la competencia por el recurso, y con pocos intercambios el estimador es ruidoso. La supervivencia en abundancia no es total (0.92) porque incluye a los hijos nacidos durante la corrida.
 
+## 14. Experimento de engaño (15 días, 3 semillas, con descubrimiento al llegar)
+
+La primera ejecución de este experimento dio cero mentiras descubiertas: el engañado iba al lugar falso, no veía comida y, como allí no podía intentar comprar, nunca ocurría el fracaso que atribuye la culpa. Se añadió el descubrimiento al llegar (sección 20): ver que no hay lo prometido ya desmiente al informante. Con ese mecanismo:
+
+| Variante (honestidad inicial) | Tasa de engaño | Mentiras descubiertas por agente | Confianza media | Reputación | Aceptación social | Dinero |
+|---|---|---|---|---|---|---|
+| honestos (0.9) | 0.05 | 0.36 | 0.635 | 0.756 | 0.725 | 20.9 |
+| neutros (0.5) | 0.27 | 1.53 | 0.619 | 0.716 | 0.706 | 20.6 |
+| deshonestos (0.1) | 0.48 | 2.44 | 0.610 | 0.666 | 0.696 | 18.9 |
+| deshonestos con escasez | 0.47 | 5.24 | 0.542 | 0.532 | 0.671 | 15.9 |
+
+Tamaños de efecto deshonestos frente a honestos: tasa de engaño d = +1.31, mentiras descubiertas +1.23, reputación −0.72, confianza −0.71, aceptación social −0.41, dinero −0.41.
+
+Observaciones: el engaño se descubre por sus consecuencias y erosiona reputación, confianza y aceptación; con escasez las mentiras se descubren el doble porque hay más intercambios de información y más comprobaciones fallidas, y la confianza cae a 0.54. Es el experimento de la sección 20 tal como lo pedía el documento: la relación cambia por el resultado real de la interacción, no por palabras. Lo que no aparece aún: cambio de estrategia del mentiroso tras ser descubierto (el motor por reglas no reacciona a la caída de reputación al decidir si mentir); es el siguiente ajuste natural.
+
 ## 5. Lo que estos resultados dicen sobre los objetivos
 
 - **Objetivo 2 (identidad y continuidad)**: en este mundo, "quién es" el agente vive sobre todo en su memoria y sus relaciones; la personalidad fija pesa poco porque las reglas de decisión la usan débilmente. Un mundo con más opciones y menos rutina forzada haría más visibles las diferencias. Con generaciones (sección 10) aparece una segunda forma de continuidad, la transmisión a los hijos: medible, parcial y dominada por la experiencia propia del hijo.
