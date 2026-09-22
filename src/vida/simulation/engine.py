@@ -22,7 +22,7 @@ from vida import __version__
 from vida.agents import identity, learning, social
 from vida.agents.agent import AgentState
 from vida.agents.decision import DecisionContext, DecisionEngine, build_engine
-from vida.agents.selfmodel import PopulationModel, predict_success
+from vida.agents.selfmodel import PopulationModel, context_levels
 from vida.database.repository import RunRepository
 from vida.memory import autobiographical, episodic, procedural, reflective, semantic
 from vida.memory import social as social_memory
@@ -163,18 +163,20 @@ class SimulationEngine:
         if proposal.kind == "share_info" and "truthful" in proposal.payload:
             agent.bump_counter("share:truth" if proposal.payload["truthful"] else "share:lie")
 
-        # Automodelo: el agente predice su propio éxito antes de actuar; el mundo decide después.
-        pred_tags = {f"action:{proposal.kind}"} | ({f"res:{proposal.resource}"} if proposal.resource else set()) \
-            | ({f"agent:{proposal.target_agent}"} if proposal.target_agent else set())
-        predicted = predict_success(memory, pred_tags)
-        baseline = self.population_model.rate(proposal.kind)
+        # Automodelo: el agente predice su propio éxito en contexto antes de actuar; el mundo decide después.
+        target = proposal.resource or proposal.target_agent or proposal.target_location
+        levels = context_levels(proposal.kind, target, self.clock.hour, self.cfg.run.ticks_per_day,
+                                {n: agent.needs[n].level for n in agent.needs})
+        predicted = agent.self_model.predict(levels)
+        baseline = self.population_model.predict(levels)
 
         event = self._next_event("action", agent.id, perception=perception, state_before=state_before,
                                  retrieved_memory_ids=[m.id for m in ctx.memories], decision=decision, proposal=proposal)
         outcome = self.world.resolve(agent, proposal, self.agents, self.hub.sub("world"), tick, event.event_id)
         agent.apply_outcome(outcome)
         own_err, base_err = agent.self_model.record(predicted, baseline, outcome.success, window=self.cfg.run.ticks_per_day)
-        self.population_model.update(proposal.kind, outcome.success)
+        agent.self_model.learn(levels, outcome.success)
+        self.population_model.update(levels, outcome.success)
         event.prediction = {"p_success": predicted, "baseline": baseline, "actual": 1.0 if outcome.success else 0.0,
                             "error": round(own_err, 6), "baseline_error": round(base_err, 6)}
         for other_id, deltas in sorted(outcome.other_need_deltas.items()):

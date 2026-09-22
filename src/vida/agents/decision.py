@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 from vida.agents.agent import AgentState
-from vida.agents.selfmodel import predict_success
+from vida.agents.selfmodel import context_levels
 from vida.memory.base import AgentMemory, MemoryRecord
 from vida.simulation.config import DecisionSection
 from vida.simulation.events import DecisionRecord
@@ -81,10 +81,11 @@ class RuleBasedEngine:
 
         Combina (a) la valencia de las memorias recuperadas con esas etiquetas,
         (b) las conclusiones reflexivas del agente sobre esa acción (peso doble) y
-        (c) la tasa de éxito propia predicha por el automodelo, que sólo penaliza
-        (una acción que siempre sale bien no gana prioridad por ello). Sin memoria
-        el factor es 1.0 y el agente decide sólo por necesidades y personalidad.
+        (c) la probabilidad de éxito que predice el automodelo en el contexto
+        actual, que sólo penaliza (una acción que siempre sale bien no gana
+        prioridad por ello). El neuroticismo amplifica el peso de lo negativo.
         """
+        agent = ctx.agent
         weighted = [(m.valence, 1.0) for m in ctx.memories if tags.issubset(m.tags)]
         action_tags = {t for t in tags if t.startswith("action:")}
         if action_tags:
@@ -92,9 +93,14 @@ class RuleBasedEngine:
         factor = 1.0
         if weighted:
             mean = sum(v * w for v, w in weighted) / sum(w for _, w in weighted)
-            factor *= 1.0 + 0.4 * mean
-        if action_tags and ctx.memory.records:
-            factor *= min(1.0, 0.5 + predict_success(ctx.memory, tags))  # 0.5..1.0: sólo penaliza fracasos previos
+            gain = 0.4 * (1.0 + 0.5 * agent.personality.neuroticism) if mean < 0 else 0.4
+            factor *= 1.0 + gain * mean
+        if action_tags and agent.self_model.n >= 3:
+            action = next(iter(action_tags)).split(":", 1)[1]
+            target = next((t.split(":", 1)[1] for t in sorted(tags) if t.startswith(("res:", "agent:", "loc:"))), None)
+            needs = {n: agent.needs[n].level for n in agent.needs}
+            levels = context_levels(action, target, ctx.hour, ctx.ticks_per_day, needs)
+            factor *= min(1.0, 0.5 + agent.self_model.predict(levels))  # 0.5..1.0: sólo penaliza
         return max(0.3, min(1.4, factor))
 
     @staticmethod
@@ -176,17 +182,20 @@ class RuleBasedEngine:
             held = self._food_in_inventory(agent)
             for food in sorted(PURCHASABLE):
                 stock = p.visible_resources.get(food, 0)
-                price = ctx.prices.get(food, 0.0)
+                price = p.prices.get(food, ctx.prices.get(food, 0.0))
                 if stock > 0 and agent.money >= price:
                     stock_up = 0.15 if held == 0 else 0.0
                     hoard_factor = 0.15 if held >= 2 else 1.0  # con reservas, comprar más deja de ser prioritario
-                    add((u("hunger") + stock_up) * 1.2 * hoard_factor, ActionProposal(kind="acquire", resource=food),
+                    cheap = 1.0 + 0.3 * max(0.0, 1.0 - price / max(0.01, ctx.prices.get(food, price)))  # más barato que la referencia: mejor
+                    add((u("hunger") + stock_up) * 1.2 * hoard_factor * cheap, ActionProposal(kind="acquire", resource=food),
                         [f"res:{food}", f"loc:{p.location_id}"], {"action:acquire", f"res:{food}"})
         if "work" in ctx.available_actions:
+            info = ctx.location_info.get(p.location_id, {})
+            wage_factor = (info.get("wage") or 3.0) / 3.0
             money_pressure = max(0.0, 1.0 - agent.money / 20.0) * 0.6 + 0.1
-            score = (u("safety") * 0.5 + money_pressure) * (0.6 + 0.8 * P.conscientiousness)
+            score = (u("safety") * 0.5 + money_pressure) * (0.6 + 0.8 * P.conscientiousness) * wage_factor
             score *= 0.7 + 0.6 * agent.identity.core_values.get("ambition", 0.5)
-            add(score, ActionProposal(kind="work"), ["action:work", f"loc:{p.location_id}"], {"action:work"})
+            add(score, ActionProposal(kind="work"), ["action:work", f"loc:{p.location_id}"], {"action:work", f"loc:{p.location_id}"})
         if "study" in ctx.available_actions:
             add((u("knowledge") + 0.1) * (0.5 + P.openness), ActionProposal(kind="study"),
                 ["action:study"], {"action:study"})
@@ -240,16 +249,20 @@ class RuleBasedEngine:
             elif ltype == "market" and arrival_open:
                 food, conf = self._food_belief(agent, loc_id)
                 held = self._food_in_inventory(agent)
-                if food and agent.money >= ctx.prices.get(food, 0.0):
+                local_prices = info.get("prices") or {}
+                if food and agent.money >= local_prices.get(food, ctx.prices.get(food, 0.0)):
                     stock_up = 0.15 if held == 0 else 0.0
                     hoard_factor = 0.15 if held >= 2 else 1.0
-                    score = (u("hunger") + stock_up) * conf * 0.9 * hoard_factor
-                if held == 0 and agent.money >= min(ctx.prices.values(), default=0.0):
+                    ref = ctx.prices.get(food, local_prices.get(food, 1.0))
+                    cheap = 1.0 + 0.3 * max(0.0, 1.0 - local_prices.get(food, ref) / max(0.01, ref))
+                    score = (u("hunger") + stock_up) * conf * 0.9 * hoard_factor * cheap
+                if held == 0 and agent.money >= min(local_prices.values(), default=min(ctx.prices.values(), default=0.0)):
                     # Exploración: aunque la creencia sea débil, un mercado se vuelve a comprobar.
                     score = max(score, u("hunger") * 0.3)
             elif ltype == "workplace" and arrival_open and agent.life_stage in {"youth", "adulthood", "old_age"}:
+                wage_factor = (info.get("wage") or 3.0) / 3.0
                 money_pressure = max(0.0, 1.0 - agent.money / 20.0) * 0.6 + 0.1
-                score = (u("safety") * 0.5 + money_pressure) * (0.6 + 0.8 * P.conscientiousness) * 0.8
+                score = (u("safety") * 0.5 + money_pressure) * (0.6 + 0.8 * P.conscientiousness) * 0.8 * wage_factor
                 food, conf = self._food_belief(agent, loc_id)
                 if food and agent.money >= ctx.prices.get(food, 0.0) and self._food_in_inventory(agent) < 2:
                     score = max(score, u("hunger") * conf * 0.8)
@@ -261,6 +274,9 @@ class RuleBasedEngine:
                 score = (u("social") + 0.02) * (0.5 + P.extraversion) * 0.6
             if score <= 0.0:
                 continue
+            visits = agent.counters.get(f"visit:{loc_id}", 0)
+            if visits < 3:
+                score *= 1.0 + 0.3 * P.openness  # apertura: curiosidad por lugares poco conocidos
             score = score * self._expectation(ctx, {"action:move", f"loc:{loc_id}"}) - 0.02 * dist
             score += self._preference_bonus(agent, [f"loc:{loc_id}"])
             proposal = ActionProposal(kind="move", target_location=loc_id)

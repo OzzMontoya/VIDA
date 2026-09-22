@@ -131,7 +131,7 @@ def _acquire(world, agent, proposal, ctx, perception, base) -> ActionOutcome:
     if loc.stock(resource) <= 0:
         return ActionOutcome(**base, kind="resource_absent", success=False, resource=resource,
                              valence=-0.7, details=details)
-    price = world.price(resource)
+    price = world.price(resource, loc.id)
     if agent.money < price:
         return ActionOutcome(**base, kind="insufficient_funds", success=False, resource=resource,
                              valence=-0.4, details={**details, "price": price})
@@ -160,10 +160,12 @@ def _work(world, agent, proposal, ctx, perception, base) -> ActionOutcome:
     skill = agent.knowledge_level("job")
     energy = agent.needs["energy"].level
     performance = round((0.5 + 0.5 * skill) * (0.5 + 0.5 * energy), 6)
-    earned = round(world.wage() * performance, 6)
+    loc = world.locations[perception.location_id]
+    earned = round(world.wage(loc.id) * performance, 6)
+    energy_cost = WORK_ENERGY if loc.work_energy is None else -abs(loc.work_energy)
     return ActionOutcome(
         **base, kind="ok", success=True, money_delta=earned,
-        need_deltas={"energy": WORK_ENERGY, "hunger": WORK_HUNGER, "safety": 0.02}, valence=0.3,
+        need_deltas={"energy": energy_cost, "hunger": WORK_HUNGER, "safety": 0.02}, valence=0.3,
         details={"performance": performance, "skill_gain": WORK_SKILL_GAIN, "skill": "job"},
     )
 
@@ -259,7 +261,7 @@ def _study(world, agent, proposal, ctx, perception, base) -> ActionOutcome:
 
 def _seek_care(world, agent, proposal, ctx, perception, base) -> ActionOutcome:
     loc = world.locations[perception.location_id]
-    price = world.price("care")
+    price = world.price("care", loc.id)
     if agent.money < price:
         return ActionOutcome(**base, kind="insufficient_funds", success=False, resource="care",
                              valence=-0.4, details={"price": price})

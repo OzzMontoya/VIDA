@@ -60,10 +60,19 @@ class World:
     def agents_at(self, location_id: str) -> list[str]:
         return sorted(a for a, loc in self.state.agent_locations.items() if loc == location_id)
 
-    def price(self, resource: str) -> float:
+    def price(self, resource: str, location_id: str | None = None) -> float:
+        """Precio del recurso en un lugar (los lugares pueden sobrescribir la economía global)."""
+        if location_id is not None:
+            loc = self.locations.get(location_id)
+            if loc is not None and resource in loc.prices:
+                return float(loc.prices[resource])
         return float(self.state.economy.get(f"price:{resource}", 0.0))
 
-    def wage(self) -> float:
+    def wage(self, location_id: str | None = None) -> float:
+        if location_id is not None:
+            loc = self.locations.get(location_id)
+            if loc is not None and loc.wage is not None:
+                return float(loc.wage)
         return float(self.state.economy.get("wage", 1.0))
 
     def truth_locations(self, resource: str) -> list[str]:
@@ -73,7 +82,12 @@ class World:
     def public_location_info(self) -> dict[str, dict[str, Any]]:
         """Conocimiento común: tipo y horario de cada lugar (no su stock)."""
         return {
-            loc_id: {"type": loc.type, "open_hours": loc.open_hours}
+            loc_id: {
+                "type": loc.type, "open_hours": loc.open_hours,
+                "prices": {r: self.price(r, loc_id) for r in sorted(set(loc.restock) | set(loc.prices))},
+                "wage": self.wage(loc_id) if loc.type == "workplace" else None,
+                "work_energy": loc.work_energy,
+            }
             for loc_id, loc in sorted(self.locations.items())
         }
 
@@ -111,7 +125,7 @@ class World:
             if other != agent.id and other in agents and agents[other].alive
         ]
         resources = {r: s for r, s in sorted(loc.resources.items())}
-        prices = {r: self.price(r) for r in resources if self.price(r) > 0}
+        prices = {r: self.price(r, loc_id) for r in resources if self.price(r, loc_id) > 0}
         return PerceptionSnapshot(
             tick=tick, hour=hour, location_id=loc_id, location_type=loc.type,
             is_open=loc.is_open(hour), visible_agents=visible,

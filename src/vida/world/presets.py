@@ -21,9 +21,9 @@ from vida.world.world import World, WorldEvent, WorldState
 AGENT_NAMES = ["Ana", "Luis", "Sofía", "Mateo", "Valentina", "Diego", "Camila", "Andrés", "Lucía", "Javier"]
 
 COMMON_KNOWLEDGE: dict[str, list[tuple[str, float]]] = {
-    # recurso -> [(ubicación, confianza inicial)]
-    "bread": [("market", 0.8)],
-    "fruit": [("market", 0.6), ("farm", 0.5)],
+    # recurso -> [(ubicación, confianza inicial)]; las ubicaciones ausentes del preset se ignoran
+    "bread": [("market", 0.8), ("bazaar", 0.5)],
+    "fruit": [("market", 0.6), ("farm", 0.5), ("bazaar", 0.4)],
 }
 
 
@@ -89,13 +89,49 @@ def spawn_agents(cfg: RunConfig, world: World, rng: random.Random) -> dict[str, 
         )
         for resource, places in sorted(COMMON_KNOWLEDGE.items()):
             for location_id, confidence in places:
-                agent.beliefs.prior(resource, location_id, confidence)
+                if location_id in world.locations:
+                    agent.beliefs.prior(resource, location_id, confidence)
         world.place_agent(agent_id, home)
         agents[agent_id] = agent
     return agents
 
 
-PRESETS = {"village_small": village_small}
+def town(cfg: RunConfig) -> WorldState:
+    """Pueblo con alternativas reales: dos mercados (uno barato y lejano), tres trabajos con
+    salario y desgaste distintos, dos plazas y rutas con coste. Elegir tiene consecuencias."""
+    homes = [Location(id=f"home_{i}", name=f"Casa {i}", type="home", adjacent=["plaza"]) for i in range(1, max(1, cfg.world.n_homes) + 1)]
+    public = [
+        Location(id="plaza", name="Plaza central", type="plaza",
+                 adjacent=[h.id for h in homes] + ["park", "market", "school", "hospital", "workshop", "farm"]),
+        Location(id="park", name="Parque", type="plaza", adjacent=["plaza", "bazaar", "mine"]),
+        Location(id="market", name="Mercado", type="market", resources={"bread": 30, "fruit": 20},
+                 restock={"bread": 30, "fruit": 20}, prices={"bread": 2.0, "fruit": 1.0}, open_hours=(6, 20), adjacent=["plaza", "farm"]),
+        Location(id="bazaar", name="Bazar", type="market", resources={"bread": 15, "fruit": 10},
+                 restock={"bread": 15, "fruit": 10}, prices={"bread": 1.2, "fruit": 0.6}, open_hours=(8, 18), adjacent=["park"]),
+        Location(id="school", name="Escuela", type="school", capacity=6, open_hours=(8, 16), adjacent=["plaza"]),
+        Location(id="hospital", name="Hospital", type="hospital", resources={"care": 5}, restock={"care": 5}, adjacent=["plaza"]),
+        Location(id="farm", name="Granja", type="workplace", resources={"fruit": 10}, restock={"fruit": 10},
+                 wage=2.5, work_energy=0.06, open_hours=(6, 18), adjacent=["plaza", "market"]),
+        Location(id="workshop", name="Taller", type="workplace", wage=3.5, work_energy=0.08, open_hours=(8, 18), adjacent=["plaza"]),
+        Location(id="mine", name="Mina", type="workplace", wage=5.5, work_energy=0.14, open_hours=(6, 14), adjacent=["park"]),
+    ]
+    locations = {loc.id: loc for loc in homes + public}
+    factor = cfg.world.restock_factor
+    for loc in locations.values():
+        loc.restock = {r: max(0, int(round(v * factor))) for r, v in loc.restock.items()}
+        loc.resources = {r: max(0, int(round(v * factor))) for r, v in loc.resources.items()}
+    days = cfg.run.ticks_per_day
+    scheduled = []
+    for i, day in enumerate(sorted(cfg.world.shortage_days)):
+        payload = {"bread": 3} if i % 2 == 0 else {"bread": 0, "fruit": 5}
+        scheduled.append(WorldEvent(tick=day * days + 6, kind="shortage", location_id="market", payload=payload))
+    return WorldState(
+        locations=locations, scheduled_events=scheduled,
+        economy={"price:bread": 2.0, "price:fruit": 1.0, "price:care": 5.0, "wage": 3.0},
+    )
+
+
+PRESETS = {"village_small": village_small, "town": town}
 
 
 def build_world(cfg: RunConfig) -> World:

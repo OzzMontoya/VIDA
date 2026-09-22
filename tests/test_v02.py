@@ -80,8 +80,49 @@ def test_self_model_prediction_and_calibration():
     sm.record(0.9, 0.5, False)
     assert sm.recent_error() == round((0.1 + 0.1 + 0.9) / 3, 6)
     pop = PopulationModel()
-    pop.update("work", True); pop.update("work", False)
+    pop.update(["work"], True); pop.update(["work"], False)
     assert pop.rate("work") == round((1 + 1.4) / 4, 6)
+
+
+def test_context_table_backs_off_to_general_levels():
+    from vida.agents.selfmodel import ContextTable, context_levels
+    table = ContextTable()
+    needs = {"hunger": 0.2, "energy": 0.9}
+    levels = context_levels("acquire", "bread", hour=9, ticks_per_day=24, needs=needs)
+    assert levels[0] == "acquire|bread|p1|h=crit|e=ok" and levels[-1] == "acquire"
+    assert table.predict(levels) == 0.7  # sin evidencia: prior
+    for _ in range(3):
+        table.update(["acquire|bread|p3", "acquire|bread", "acquire"], False)  # otra franja: fracasos
+    # El contexto específico de la mañana no tiene evidencia; retrocede a acquire|bread (3 fracasos).
+    assert table.predict(levels) == round(1.4 / 5, 6)
+    for _ in range(3):
+        table.update(levels, True)
+    assert table.predict(levels) == round((3 + 1.4) / 5, 6)  # ahora manda el contexto específico
+
+
+def test_town_preset_offers_real_alternatives(cfg):
+    from vida.world.presets import build_world, spawn_agents
+    from vida.world.actions import ActionProposal
+    c = cfg.model_copy(deep=True)
+    c.world.preset = "town"
+    world = build_world(c)
+    assert {"market", "bazaar", "mine", "workshop", "farm"} <= set(world.locations)
+    assert world.price("bread", "bazaar") == 1.2 and world.price("bread", "market") == 2.0 and world.price("bread") == 2.0
+    assert world.wage("mine") == 5.5 and world.wage("farm") == 2.5 and world.wage() == 3.0
+    info = world.public_location_info()
+    assert info["bazaar"]["prices"]["bread"] == 1.2 and info["mine"]["wage"] == 5.5
+    agents = spawn_agents(c, world, RngHub(3).sub("spawn"))
+    a = agents["a01"]
+    assert a.beliefs.belief_at("bread", "bazaar") is not None
+    world.place_agent("a01", "bazaar"); a.location_id = "bazaar"
+    out = world.resolve(a, ActionProposal(kind="acquire", resource="bread"), agents, RngHub(1).sub("w"), 10, "e1")
+    assert out.success and out.money_delta == -1.2
+    world.place_agent("a01", "mine"); a.location_id = "mine"
+    out = world.resolve(a, ActionProposal(kind="work"), agents, RngHub(1).sub("w"), 8, "e2")
+    assert out.success and out.need_deltas["energy"] == -0.14 and out.money_delta > 2.0
+    engine = SimulationEngine(c, run_id="town", sha="test")
+    summary = engine.run(ticks=48)
+    assert summary.alive and summary.n_events > 400
 
 
 def test_engine_records_predictions_and_reflections(small_cfg):

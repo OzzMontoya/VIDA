@@ -193,6 +193,7 @@ class AgentState(BaseModel):
         self.money = round(max(0.0, self.money + outcome.money_delta), 6)
         if outcome.new_location is not None:
             self.location_id = outcome.new_location
+            self.bump_counter(f"visit:{outcome.new_location}")
         self.emotion.nudge(outcome.valence, arousal=abs(outcome.valence))
         self.bump_counter(f"action:{outcome.action}")
         if outcome.success:

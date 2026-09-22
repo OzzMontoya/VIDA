@@ -20,6 +20,9 @@ class Location(BaseModel):
     resources: dict[str, int] = Field(default_factory=dict)
     restock: dict[str, int] = Field(default_factory=dict)  # reposición diaria por recurso
     capacity: int | None = None
+    prices: dict[str, float] = Field(default_factory=dict)  # sobrescribe el precio global por recurso
+    wage: float | None = None  # salario por tick si es lugar de trabajo (None = economía global)
+    work_energy: float | None = None  # energía gastada por tick de trabajo (None = valor por defecto)
     open_hours: tuple[int, int] | None = None  # [apertura, cierre) en horas; None = siempre abierto
     adjacent: list[str] = Field(default_factory=list)
 

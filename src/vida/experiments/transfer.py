@@ -21,6 +21,7 @@ import random
 from typing import Any
 
 from vida.agents.agent import AgentState, Identity
+from vida.agents.selfmodel import SelfModelState
 from vida.agents.beliefs import WorldModel
 from vida.agents.personality import Personality
 from vida.evaluation.metrics import continuity_index
@@ -42,7 +43,8 @@ def _fresh_beliefs(agent: AgentState, world_locations: dict[str, Any]) -> WorldM
     )
     for resource, places in sorted(COMMON_KNOWLEDGE.items()):
         for location_id, confidence in places:
-            beliefs.prior(resource, location_id, confidence)
+            if location_id in world_locations:
+                beliefs.prior(resource, location_id, confidence)
     return beliefs
 
 
@@ -58,6 +60,7 @@ def fresh_mind(agent: AgentState, world_locations: dict[str, Any], rng: random.R
     new.goals = []
     new.decision_history = []
     new.counters = {}
+    new.self_model = SelfModelState()
     return new
 
 
@@ -79,6 +82,7 @@ def apply_transfer(engine: SimulationEngine, agent_id: str, condition: str, rng:
         new_memory = copy.deepcopy(src_memory)
     if condition in {"solo_conocimientos", "parcial"}:
         new.knowledge = copy.deepcopy(src.knowledge)
+        new.self_model = copy.deepcopy(src.self_model)  # saber hacer: incluye lo que sabe de sí mismo
     if condition == "solo_personalidad":
         new.personality = src.personality.model_copy()
     if condition == "parcial":
