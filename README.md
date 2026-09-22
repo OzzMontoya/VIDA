@@ -4,7 +4,7 @@
 
 Plataforma experimental de simulación multiagente para estudiar cómo la memoria, la experiencia, el aprendizaje, las relaciones sociales y el entorno forman, modifican y preservan una identidad individual. Proyecto de investigación de Oziel Atlahi Montoya Mares (UTMA). El documento de diseño completo está en `Proyecto_VIDA_Documento_Completo_v2_1.pdf`.
 
-Estado: **VIDA-0.1, núcleo jugable.** 10 agentes viven 30 días simulados en un pueblo textual de 12 lugares: trabajan, compran, comen, descansan, estudian, conversan, piden y comparten información (a veces falsa), y cada uno acumula memoria episódica, semántica, social, autobiográfica y procedimental. Las decisiones son por reglas deterministas con semilla; la interfaz `DecisionEngine` permite enchufar un LLM después. Pendiente para cerrar 0.1: dashboard Streamlit y experimentos configurables.
+Estado: **VIDA-0.1, núcleo jugable.** 10 agentes viven 30 días simulados en un pueblo textual de 12 lugares: trabajan, compran, comen, descansan, estudian, conversan, piden y comparten información (a veces falsa), y cada uno acumula memoria episódica, semántica, social, autobiográfica y procedimental. Las decisiones son por reglas deterministas con semilla, o bien con un modelo de lenguaje (Claude) para todos o algunos agentes. Pendiente para cerrar 0.1: experimentos configurables.
 
 Qué puede responder hoy el sistema sobre cualquier agente (criterio de éxito de 0.1): qué vivió, qué recuerda, qué aprendió, qué prefiere, a quién conoce, qué decisiones tomó y qué experiencias lo modificaron. Ver `python -m vida life`.
 
@@ -33,6 +33,19 @@ python -m vida run --seed 7 --ticks 240 --run-id demo # semilla y duración expl
 python -m vida runs                                   # listar corridas
 python -m vida life a01 --run <run_id>                # biografía de un agente (añade --json para datos)
 ```
+
+## Motor de decisión con LLM
+
+```bash
+.venv\Scripts\pip install anthropic                      # una sola vez
+copy .env.example .env                                     # y escribe tu ANTHROPIC_API_KEY
+.venv\Scripts\python -m vida run --config config/llm.yaml           # Ana y Diego deciden con claude-opus-5, el resto por reglas
+.venv\Scripts\python -m vida run --engine llm_v1 --llm-agents a01 --llm-model claude-haiku-4-5 --ticks 120
+```
+
+El LLM recibe la ficha del agente, su percepción, sus creencias (que pueden ser falsas), sus recuerdos relevantes y la lista de acciones legales, y elige una por su clave. El mundo sigue resolviendo el resultado. Si la respuesta no es válida, la API falla o el modelo declina, el agente decide por reglas y el evento lo registra (`decision.engine = "llm_v1/fallback:rules_v1"`). Cada respuesta se guarda en `data/llm_cache.sqlite`: repetir la corrida con la misma semilla no vuelve a llamar a la API y reproduce el mismo hash de eventos.
+
+Costo orientativo con `claude-opus-5`: unos 1.700 tokens de entrada y 60 de salida por decisión, cerca de 1 centavo de dólar cada una. Una corrida de 30 días con los 10 agentes son ~7.200 decisiones, unos 70 dólares; con `claude-haiku-4-5` unos 14. Por eso `config/llm.yaml` limita el LLM a dos agentes y 10 días (unos 5 dólares). El resumen de cada corrida imprime llamadas, aciertos de caché, tokens y costo estimado.
 
 ## Dashboard
 

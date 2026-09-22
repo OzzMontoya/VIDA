@@ -226,11 +226,16 @@ class RuleBasedEngine:
         return cands
 
     # --- interfaz ----------------------------------------------------------
-    def decide(self, ctx: DecisionContext, rng: random.Random) -> tuple[ActionProposal, DecisionRecord]:
+    def candidates(self, ctx: DecisionContext) -> dict[str, tuple[float, ActionProposal]]:
+        """Todas las acciones legales expandidas a objetivos concretos, con su puntaje heurístico."""
         cands = self._local_scores(ctx)
         cands.update(self._move_scores(ctx))
         if not cands:
             cands["idle"] = (0.0, ActionProposal(kind="idle"))
+        return cands
+
+    def decide(self, ctx: DecisionContext, rng: random.Random) -> tuple[ActionProposal, DecisionRecord]:
+        cands = self.candidates(ctx)
         ranked = sorted(cands.items(), key=lambda kv: (-kv[1][0], kv[0]))
         best_score = ranked[0][1][0]
         top = [kv for kv in ranked if best_score - kv[1][0] <= self.epsilon]
@@ -297,6 +302,11 @@ ENGINES: dict[str, type] = {"rules_v1": RuleBasedEngine}
 
 
 def build_engine(cfg: DecisionSection) -> DecisionEngine:
+    if cfg.engine == "llm_v1":
+        # Import perezoso: el SDK de Anthropic sólo es necesario si se usa este motor.
+        from vida.agents.llm_decision import LLMEngine
+
+        return LLMEngine(cfg)
     try:
         return ENGINES[cfg.engine](cfg)
     except KeyError as exc:

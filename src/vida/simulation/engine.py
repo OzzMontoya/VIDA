@@ -50,6 +50,9 @@ class RunSummary(BaseModel):
     events_sha256: str
     deaths: dict[str, str] = Field(default_factory=dict)
     alive: list[str] = Field(default_factory=list)
+    decision_engine: str = "rules_v1"
+    llm_stats: dict[str, float] | None = None
+    llm_cost_usd: float | None = None
 
 
 def git_sha() -> str:
@@ -275,6 +278,9 @@ class SimulationEngine:
             run_id=self.run_id, seed=self.cfg.run.seed, config_hash=config_hash(self.cfg), git_sha=self.sha,
             code_version=__version__, ticks=ticks, n_agents=len(self.agents), n_events=len(self.events),
             events_sha256=events_digest(self.events), deaths=dict(sorted(self.deaths.items())), alive=self.alive_ids(),
+            decision_engine=getattr(self.decision_engine, "name", "unknown"),
+            llm_stats=dict(getattr(self.decision_engine, "stats", {})) or None,
+            llm_cost_usd=self.decision_engine.estimated_cost_usd() if hasattr(self.decision_engine, "estimated_cost_usd") else None,
         )
         if self.repo is not None:
             for aid, memory in sorted(self.memories.items()):

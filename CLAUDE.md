@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 VIDA (Vida Artificial, Identidad y Desarrollo de Agentes) es una plataforma experimental de simulación multiagente para estudiar cómo memoria, experiencia, aprendizaje, relaciones sociales y entorno forman y preservan una identidad individual. Proyecto de investigación académica (UTMA); el rigor científico y la reproducibilidad pesan más que la velocidad. El documento de diseño completo es `Proyecto_VIDA_Documento_Completo_v2_1.pdf` (en español; léelo con `pdftotext -layout <pdf> -`, la herramienta Read no puede renderizarlo).
 
-Estado: **VIDA-0.1, núcleo jugable implementado** (10 agentes, mundo textual de 12 lugares, memoria de cinco tipos, decisiones por reglas deterministas, consecuencias causales, SQLite + JSONL, CLI con biografías). Dashboard Streamlit en `dashboard/` (hecho). Pendiente para cerrar 0.1: motor de decisión LLM y experimentos configurables en `src/vida/experiments/`.
+Estado: **VIDA-0.1, núcleo jugable implementado** (10 agentes, mundo textual de 12 lugares, memoria de cinco tipos, decisiones por reglas deterministas, consecuencias causales, SQLite + JSONL, CLI con biografías). Dashboard Streamlit en `dashboard/` y motor de decisión LLM (`agents/llm_decision.py`, `engine: llm_v1`) hechos. Pendiente para cerrar 0.1: experimentos configurables en `src/vida/experiments/`.
 
 Habla con el usuario en español. Identificadores, archivos y logs en inglés; docstrings, README, comentarios y textos de memoria/biografía en español.
 
@@ -19,6 +19,7 @@ Habla con el usuario en español. Identificadores, archivos y logs en inglés; d
 .venv\Scripts\python -m vida runs                  # listar corridas en data/runs/
 .venv\Scripts\python -m vida life a01 --run <run_id> [--json]     # biografía de un agente
 .venv\Scripts\python -m streamlit run dashboard/app.py          # dashboard en http://localhost:8501
+.venv\Scripts\python -m vida run --config config/llm.yaml         # motor LLM (requiere ANTHROPIC_API_KEY en .env)
 ```
 
 Entorno: `.venv` creado con `python -m venv .venv && .venv\Scripts\pip install -e ".[dev,dashboard]"`. Sin uv ni ruff instalados. Una corrida de 30 días con 10 agentes tarda ~45 s y genera ~7000 eventos.
@@ -28,7 +29,7 @@ Git: el repositorio de VIDA vive en esta carpeta, pero `C:\Users\Montoya\Documen
 ## Principios de arquitectura (no negociables, del documento)
 
 1. **El simulador es la autoridad.** `WorldState` (`world/world.py`) es la verdad; `WorldModel` (`agents/beliefs.py`) es lo que el agente cree. Sólo `World.resolve` (vía `world/rules.py`) muta el mundo.
-2. **El motor de decisión propone; el mundo resuelve.** `DecisionEngine.decide` devuelve una `ActionProposal`; `World.resolve` devuelve el `ActionOutcome` objetivo. Cualquier motor nuevo (LLM) implementa el `Protocol` de `agents/decision.py` y se registra en `ENGINES`.
+2. **El motor de decisión propone; el mundo resuelve.** `DecisionEngine.decide` devuelve una `ActionProposal`; `World.resolve` devuelve el `ActionOutcome` objetivo. `RuleBasedEngine` (`rules_v1`) y `LLMEngine` (`llm_v1`, `agents/llm_decision.py`) implementan el mismo `Protocol`. El LLM sólo elige entre `RuleBasedEngine.candidates(ctx)` (acciones legales expandidas); una elección inválida, un error de API o una negativa de seguridad degradan a reglas y lo marcan en `DecisionRecord.engine`. Modelo por defecto `claude-opus-5` con `output_config` (JSON schema + effort low) y `fallbacks="default"` del servidor (beta); respuestas cacheadas en `data/llm_cache.sqlite` por hash del prompt, lo que mantiene la reproducibilidad al repetir una corrida. Tests sin red con un cliente falso en `tests/test_llm_decision.py`. Nunca uses `random` ni tokens de conversación para decidir: todo pasa por `DecisionContext`.
 3. **Las relaciones cambian por resultados, no por palabras.** `agents/social.py` y `agents/learning.py` sólo leen `ActionOutcome`; nunca `proposal.rationale` ni `details["_world"]`. La clave `_world` guarda lo que sólo el mundo sabe (si una respuesta fue mentira) y alimenta reputación y evaluación.
 4. **Reproducibilidad.** Todo azar sale de `RngHub.sub(...)` (`simulation/rng.py`); nunca `random` global. Nada depende del orden de iteración de un `set` (usar `sorted`). El hash de eventos excluye `run_id`, así dos corridas con la misma semilla dan hash idéntico (`tests/test_determinism.py`).
 5. **Lenguaje científico.** Nada en código, logs, memorias ni biografías afirma conciencia o sentimientos; se describen conductas observadas.

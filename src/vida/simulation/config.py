@@ -76,9 +76,30 @@ class MemorySection(BaseModel):
     forget_after_days: int = 7
 
 
+class LLMSection(BaseModel):
+    """Parámetros del motor de decisión basado en LLM (``engine: llm_v1``).
+
+    ``agents`` limita qué agentes deciden con el LLM (los demás usan reglas);
+    ``None`` significa todos. ``cache_path`` guarda cada respuesta por hash del
+    prompt para poder repetir una corrida sin volver a llamar a la API.
+    """
+
+    model: str = "claude-opus-5"
+    effort: str | None = "low"  # low | medium | high | xhigh | max; None omite el parámetro
+    max_tokens: int = 1024
+    agents: list[str] | None = None
+    cache_path: str | None = "data/llm_cache.sqlite"
+    fallback_to_rules: bool = True
+    server_fallbacks: bool = True  # fallbacks="default" del servidor ante una negativa de seguridad
+    include_heuristic_scores: bool = False  # mostrar al LLM el puntaje de las reglas como orientación
+    max_memories: int = 6
+    timeout_seconds: float = 60.0
+
+
 class DecisionSection(BaseModel):
     engine: str = "rules_v1"
     epsilon: float = 0.01
+    llm: LLMSection = Field(default_factory=LLMSection)
 
 
 class RunConfig(BaseModel):

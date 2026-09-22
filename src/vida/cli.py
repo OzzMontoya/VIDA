@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -27,19 +28,47 @@ def _db_path(data_dir: Path, run_id: str) -> Path:
     return data_dir / run_id / "vida.sqlite"
 
 
+def load_dotenv(path: Path = Path(".env")) -> None:
+    """Carga KEY=VALUE de un .env local sin pisar variables ya definidas (sin dependencias)."""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key, value = key.strip(), value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
 def cmd_run(args: argparse.Namespace) -> int:
+    load_dotenv()
     cfg = load_config(args.config)
     if args.seed is not None:
         cfg.run.seed = args.seed
     if args.ticks is not None:
         cfg.run.ticks = args.ticks
+    if args.engine:
+        cfg.decision.engine = args.engine
+    if args.llm_model:
+        cfg.decision.llm.model = args.llm_model
+    if args.llm_agents:
+        cfg.decision.llm.agents = [a.strip() for a in args.llm_agents.split(",") if a.strip()]
+    if cfg.decision.engine == "llm_v1" and not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
+        print("Aviso: no hay ANTHROPIC_API_KEY en el entorno ni en .env; el motor LLM sólo funcionará con respuestas en caché "
+              "y recurrirá a las reglas en el resto.", file=sys.stderr)
     run_id = args.run_id or make_run_id(cfg.run.seed)
     data_dir, log_dir = Path(args.data_dir), Path(args.log_dir)
     repo = RunRepository(_db_path(data_dir, run_id))
     logger = JsonlEventLogger(log_dir / run_id / "events.jsonl")
     engine = SimulationEngine(cfg, run_id, repo=repo, logger=logger)
+    llm_txt = ""
+    if cfg.decision.engine == "llm_v1":
+        who = ", ".join(cfg.decision.llm.agents) if cfg.decision.llm.agents else "todos los agentes"
+        llm_txt = f" · LLM {cfg.decision.llm.model} para {who}"
     print(f"VIDA {__version__} · corrida {run_id} · semilla {cfg.run.seed} · {cfg.run.ticks} ticks "
-          f"({cfg.run.ticks // cfg.run.ticks_per_day} días) · {cfg.agents.n_agents} agentes")
+          f"({cfg.run.ticks // cfg.run.ticks_per_day} días) · {cfg.agents.n_agents} agentes · motor {cfg.decision.engine}{llm_txt}")
     summary = engine.run()
     repo.close()
     if args.json:
@@ -49,6 +78,11 @@ def cmd_run(args: argparse.Namespace) -> int:
         print(f"Vivos: {', '.join(summary.alive) or 'ninguno'}")
         if summary.deaths:
             print("Muertes: " + ", ".join(f"{aid} ({reason})" for aid, reason in summary.deaths.items()))
+        if summary.llm_stats:
+            st = summary.llm_stats
+            print(f"LLM: {int(st['calls'])} llamadas, {int(st['cache_hits'])} desde caché, {int(st['fallbacks'])} recurrieron a reglas, "
+                  f"{int(st['refusals'])} negativas · tokens {int(st['input_tokens']):,} entrada / {int(st['output_tokens']):,} salida "
+                  f"· costo estimado ${summary.llm_cost_usd:.2f}")
         print(f"Base de datos: {_db_path(data_dir, run_id)}")
         print(f"Eventos JSONL: {log_dir / run_id / 'events.jsonl'}")
         print(f"Biografías: python -m vida life <agent_id> --run {run_id}")
@@ -112,6 +146,9 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--run-id", help="identificador explícito (por defecto fecha_hora_semilla)")
     run.add_argument("--log-dir", default=str(DEFAULT_LOG_DIR))
     run.add_argument("--json", action="store_true", help="imprimir el resumen como JSON")
+    run.add_argument("--engine", choices=["rules_v1", "llm_v1"], help="motor de decisión (sobrescribe la config)")
+    run.add_argument("--llm-model", help="modelo para llm_v1, p. ej. claude-opus-5 o claude-haiku-4-5")
+    run.add_argument("--llm-agents", help="agentes que deciden con el LLM, separados por coma (los demás usan reglas)")
     run.set_defaults(func=cmd_run)
 
     life = sub.add_parser("life", help="reconstruir la biografía de un agente")

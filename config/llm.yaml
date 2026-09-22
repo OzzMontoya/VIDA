@@ -1,0 +1,54 @@
+# Corrida de ejemplo con el motor LLM (claude-opus-5) sólo para dos agentes.
+# Los otros ocho deciden por reglas: permite comparar vidas con y sin LLM en el mismo mundo.
+# Costo orientativo: ~1.700 tokens de entrada y ~60 de salida por decisión → ~$0.01 por decisión con Opus 5;
+# 2 agentes × 240 ticks ≈ 480 decisiones ≈ $5. Con claude-haiku-4-5 sería ≈ $1.
+# Requiere ANTHROPIC_API_KEY en el entorno o en .env. Las respuestas se cachean en data/llm_cache.sqlite.
+
+run:
+  seed: 42
+  ticks: 240            # 10 días
+  ticks_per_day: 24
+  snapshot_every_ticks: 24
+
+world:
+  preset: village_small
+
+agents:
+  n_agents: 10
+  initial_age_days: { min: 20, max: 40 }
+  starting_money: 20.0
+
+needs:
+  hunger:    { decay_per_tick: 0.030, critical_below: 0.10 }
+  energy:    { decay_per_tick: 0.025, critical_below: 0.10 }
+  health:    { decay_per_tick: 0.002, critical_below: 0.10 }
+  social:    { decay_per_tick: 0.015, critical_below: 0.10 }
+  safety:    { decay_per_tick: 0.005, critical_below: 0.10 }
+  knowledge: { decay_per_tick: 0.001, critical_below: 0.10 }
+
+lifecycle:
+  stage_thresholds_days: { adolescence: 12, youth: 18, adulthood: 30, old_age: 65 }
+  max_age_days: 85
+  critical_ticks: 12
+  old_age_health_factor: 3.0
+
+memory:
+  retrieve_k: 8
+  weights: { recency: 1.0, importance: 1.0, relevance: 1.0 }
+  recency_decay: 0.99
+  forget_below: 0.2
+  forget_after_days: 7
+
+decision:
+  engine: llm_v1
+  epsilon: 0.01
+  llm:
+    model: claude-opus-5
+    effort: low
+    max_tokens: 1024
+    agents: [a01, a06]          # Ana y Diego deciden con el LLM
+    cache_path: data/llm_cache.sqlite
+    fallback_to_rules: true
+    server_fallbacks: true
+    include_heuristic_scores: false
+    max_memories: 6
