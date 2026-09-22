@@ -84,7 +84,9 @@ class AgentMemory:
 
     def retrieve(self, ctx_tags: set[str], tick: int, k: int | None = None) -> list[MemoryRecord]:
         """Devuelve las ``k`` memorias más relevantes y registra el acceso."""
-        k = k or self.cfg.retrieve_k
+        k = self.cfg.retrieve_k if k is None else k
+        if k <= 0:
+            return []
         ranked = sorted(self.all(), key=lambda r: (-self.score(r, ctx_tags, tick), r.id))
         chosen = ranked[:k]
         for record in chosen:
@@ -103,9 +105,10 @@ class AgentMemory:
     def consolidate(self, tick: int, ticks_per_day: int) -> list[str]:
         """Olvida episodios poco importantes y antiguos. Devuelve los ids olvidados."""
         horizon = tick - self.cfg.forget_after_days * ticks_per_day
+        kinds = set(self.cfg.forget_kinds)
         forgotten = [
             r.id for r in self.all()
-            if r.kind == "episodic" and r.importance < self.cfg.forget_below and r.tick < horizon
+            if r.kind in kinds and r.importance < self.cfg.forget_below and r.tick < horizon
         ]
         for rid in forgotten:
             self.forgotten.append(self.records.pop(rid))

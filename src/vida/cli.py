@@ -136,6 +136,40 @@ def cmd_runs(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_experiment(args: argparse.Namespace) -> int:
+    import json as _json
+    from datetime import datetime
+
+    from vida.experiments import VARIANT_EXPERIMENTS, transfer
+    from vida.experiments.runner import render_summary, run_experiment
+
+    cfg = load_config(args.config)
+    seeds = [int(s) for s in args.seeds.split(",") if s.strip()]
+    out_dir = Path(args.out_dir)
+    progress = (lambda msg: print(f"  · {msg}", flush=True)) if not args.quiet else None
+    print(f"VIDA {__version__} · experimento {args.name} · semillas {seeds}")
+    if args.name == "transfer":
+        result = transfer.run_transfer_experiment(
+            cfg, seeds=seeds, split_ticks=args.split, horizon_ticks=args.horizon, agent_id=args.agent,
+            conditions=[c.strip() for c in args.conditions.split(",")] if args.conditions else None, progress=progress)
+        metrics = transfer.KEY_METRICS
+        target = out_dir / "transfer" / datetime.now().strftime("%Y%m%d_%H%M%S")
+        target.mkdir(parents=True, exist_ok=True)
+        (target / "results.json").write_text(_json.dumps(result["rows"], ensure_ascii=False, indent=1), encoding="utf-8")
+        (target / "summary.json").write_text(_json.dumps(result["summary"], ensure_ascii=False, indent=1), encoding="utf-8")
+        result["path"] = str(target)
+        print(f"Corte en tick {args.split}, horizonte {args.horizon} ticks, agente {args.agent}. "
+              "ICI = semejanza entre estados (1 = idéntico); no mide conciencia.")
+    else:
+        variants, metrics = VARIANT_EXPERIMENTS[args.name]
+        result = run_experiment(args.name, cfg, variants, seeds=seeds, ticks=args.ticks, out_dir=out_dir, progress=progress)
+    print()
+    print(render_summary(result["summary"], metrics))
+    print()
+    print(f"Resultados: {result['path']}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="vida", description="VIDA: simulador de vidas artificiales")
     parser.add_argument("--version", action="version", version=f"vida {__version__}")
@@ -163,6 +197,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     runs = sub.add_parser("runs", help="listar corridas")
     runs.set_defaults(func=cmd_runs)
+
+    exp = sub.add_parser("experiment", help="ejecutar un experimento (memory, environment, deception, transfer)")
+    exp.add_argument("name", choices=["memory", "environment", "deception", "transfer"])
+    exp.add_argument("--config", default="config/default.yaml")
+    exp.add_argument("--seeds", default="1,2,3", help="semillas separadas por coma")
+    exp.add_argument("--ticks", type=int, default=240, help="duración de cada corrida (experimentos de variantes)")
+    exp.add_argument("--split", type=int, default=240, help="transfer: tick de corte")
+    exp.add_argument("--horizon", type=int, default=120, help="transfer: ticks después del corte")
+    exp.add_argument("--agent", default="a01", help="transfer: agente estudiado")
+    exp.add_argument("--conditions", help="transfer: condiciones separadas por coma")
+    exp.add_argument("--out-dir", default=str(Path("data") / "experiments"))
+    exp.add_argument("--quiet", action="store_true")
+    exp.set_defaults(func=cmd_experiment)
     return parser
 
 

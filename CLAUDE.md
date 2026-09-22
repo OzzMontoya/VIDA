@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 VIDA (Vida Artificial, Identidad y Desarrollo de Agentes) es una plataforma experimental de simulación multiagente para estudiar cómo memoria, experiencia, aprendizaje, relaciones sociales y entorno forman y preservan una identidad individual. Proyecto de investigación académica (UTMA); el rigor científico y la reproducibilidad pesan más que la velocidad. El documento de diseño completo es `Proyecto_VIDA_Documento_Completo_v2_1.pdf` (en español; léelo con `pdftotext -layout <pdf> -`, la herramienta Read no puede renderizarlo).
 
-Estado: **VIDA-0.1, núcleo jugable implementado** (10 agentes, mundo textual de 12 lugares, memoria de cinco tipos, decisiones por reglas deterministas, consecuencias causales, SQLite + JSONL, CLI con biografías). Dashboard Streamlit en `dashboard/` y motor de decisión LLM (`agents/llm_decision.py`, `engine: llm_v1`) hechos. Pendiente para cerrar 0.1: experimentos configurables en `src/vida/experiments/`.
+Estado: **VIDA-0.1, núcleo jugable implementado** (10 agentes, mundo textual de 12 lugares, memoria de cinco tipos, decisiones por reglas deterministas, consecuencias causales, SQLite + JSONL, CLI con biografías). Dashboard Streamlit en `dashboard/` y motor de decisión LLM (`agents/llm_decision.py`, `engine: llm_v1`) hechos. Experimentos configurables (`src/vida/experiments/`: memory, environment, deception, transfer) con métricas e ICI (`evaluation/metrics.py`) hechos: **VIDA-0.1 completo en alcance.** Siguiente: VIDA-0.2 (100 agentes, memoria reflexiva, automodelo; ver `docs/criterios_consciencia.md`).
 
 Habla con el usuario en español. Identificadores, archivos y logs en inglés; docstrings, README, comentarios y textos de memoria/biografía en español.
 
@@ -21,6 +21,7 @@ Habla con el usuario en español. Identificadores, archivos y logs en inglés; d
 .venv\Scripts\python -m streamlit run dashboard/app.py          # dashboard en http://localhost:8501
 .venv\Scripts\python -m vida run --config config/llm.yaml         # motor LLM con Claude (requiere ANTHROPIC_API_KEY en .env)
 .venv\Scripts\python -m vida run --config config/llm_local.yaml   # motor LLM local gratuito (Ollama + llama3.2)
+.venv\Scripts\python -m vida experiment transfer --seeds 1,2,3 --split 240 --horizon 120   # experimentos: memory|environment|deception|transfer
 ```
 
 Entorno: `.venv` creado con `python -m venv .venv && .venv\Scripts\pip install -e ".[dev,dashboard]"`. Sin uv ni ruff instalados. Una corrida de 30 días con 10 agentes tarda ~45 s y genera ~7000 eventos.
@@ -29,7 +30,7 @@ Git: el repositorio de VIDA vive en esta carpeta, pero `C:\Users\Montoya\Documen
 
 ## Objetivos de investigación del usuario
 
-En `docs/objetivos.md`: (1) ¿puede existir consciencia artificial?, (2) qué constituye su identidad y continuidad, (3) si la continuidad se mantiene al cambiar de soporte, (4) preservación indefinida de una mente consciente. Presenta el trabajo técnico como pasos hacia esas preguntas sin romper el principio 5 (el código nunca afirma consciencia).
+En `docs/objetivos.md`: (1) ¿puede existir consciencia artificial?, (2) qué constituye su identidad y continuidad, (3) si la continuidad se mantiene al cambiar de soporte, (4) preservación indefinida de una mente consciente. Presenta el trabajo técnico como pasos hacia esas preguntas sin romper el principio 5 (el código nunca afirma consciencia). Criterios operativos y ruta en `docs/criterios_consciencia.md`. El usuario pidió avanzar de forma continua y autónoma hacia estos objetivos: en cada sesión toma el siguiente paso de la hoja de ruta, constrúyelo con tests, haz commit y explica qué instrumento aporta.
 
 ## Principios de arquitectura (no negociables, del documento)
 
@@ -52,6 +53,7 @@ Por agente, en orden barajado con semilla: `World.perceive` → `learning.observ
 - Nueva acción: `ActionKind` en `world/actions.py`, resolver + legalidad en `world/rules.py`, puntuación en `RuleBasedEngine._local_scores`/`_move_scores`, plantilla en `memory/episodic.describe`, etiqueta en `memory/autobiographical.ACTION_LABELS`.
 - Parámetros de corrida: sólo en `config/default.yaml` + `simulation/config.py` (el hash de config forma parte de la reproducibilidad).
 - Mundo o población inicial: `world/presets.py` (`village_small`, `spawn_agents`, `COMMON_KNOWLEDGE`).
+- Experimentos: variantes = funciones `RunConfig -> RunConfig` en `experiments/<nombre>.py` (`VARIANTS`, `KEY_METRICS`), registradas en `experiments/__init__.py`; el ejecutor `experiments/runner.py` corre en memoria sin base de datos. `experiments/transfer.py` clona el `SimulationEngine` con `copy.deepcopy` (sólo con `rules_v1`; el motor LLM tiene una conexión SQLite no copiable) y sustituye la mente del agente con `apply_transfer`. Métricas nuevas van en `evaluation/metrics.py` y se añaden a `KEY_METRICS` del experimento.
 - Persistencia: `database/models.py` guarda JSON completo por evento/memoria/estado; consultas en `database/repository.py`. Biografías en `evaluation/biography.py`.
 - Dashboard: `dashboard/data.py` aplana la SQLite a DataFrames (cacheado por mtime), `dashboard/charts.py` construye las figuras Plotly con la paleta categórica fija (8 tonos; las 11 acciones se pliegan en 8 familias en `ACTION_GROUPS`), `dashboard/app.py` es la UI. Se usa un `st.radio` en la barra lateral en lugar de `st.tabs` porque las pestañas renderizan todo a la vez y la página se vuelve inusable. Streamlit recarga `app.py` al guardar pero no los módulos importados: reinicia el servidor tras tocar `charts.py` o `data.py`. Tests con `streamlit.testing.v1.AppTest` en `tests/test_dashboard.py`.
 

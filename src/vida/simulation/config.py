@@ -28,6 +28,8 @@ class RunSection(BaseModel):
 
 class WorldSection(BaseModel):
     preset: str = "village_small"
+    restock_factor: float = 1.0  # multiplica la reposición diaria (abundancia > 1, escasez < 1)
+    shortage_days: list[int] = Field(default_factory=lambda: [10, 20])  # días con escasez programada en el mercado
 
 
 class AgeRange(BaseModel):
@@ -39,6 +41,7 @@ class AgentsSection(BaseModel):
     n_agents: int = 10
     initial_age_days: AgeRange = Field(default_factory=AgeRange)
     starting_money: float = 20.0
+    initial_honesty: float | None = None  # valor inicial de honestidad (None = 0.5); experimento de engaño
 
 
 class NeedConfig(BaseModel):
@@ -69,11 +72,12 @@ class MemoryWeights(BaseModel):
 
 
 class MemorySection(BaseModel):
-    retrieve_k: int = 8
+    retrieve_k: int = 8  # 0 = el agente no recupera memorias al decidir (condición "sin memoria")
     weights: MemoryWeights = Field(default_factory=MemoryWeights)
     recency_decay: float = 0.99
     forget_below: float = 0.2
     forget_after_days: int = 7
+    forget_kinds: list[str] = Field(default_factory=lambda: ["episodic"])  # tipos sujetos a olvido
 
 
 class LLMSection(BaseModel):

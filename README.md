@@ -4,7 +4,7 @@
 
 Plataforma experimental de simulación multiagente para estudiar cómo la memoria, la experiencia, el aprendizaje, las relaciones sociales y el entorno forman, modifican y preservan una identidad individual. Proyecto de investigación de Oziel Atlahi Montoya Mares (UTMA). El documento de diseño completo está en `Proyecto_VIDA_Documento_Completo_v2_1.pdf`.
 
-Estado: **VIDA-0.1, núcleo jugable.** 10 agentes viven 30 días simulados en un pueblo textual de 12 lugares: trabajan, compran, comen, descansan, estudian, conversan, piden y comparten información (a veces falsa), y cada uno acumula memoria episódica, semántica, social, autobiográfica y procedimental. Las decisiones son por reglas deterministas con semilla, o bien con un modelo de lenguaje (Claude) para todos o algunos agentes. Pendiente para cerrar 0.1: experimentos configurables.
+Estado: **VIDA-0.1, núcleo jugable.** 10 agentes viven 30 días simulados en un pueblo textual de 12 lugares: trabajan, compran, comen, descansan, estudian, conversan, piden y comparten información (a veces falsa), y cada uno acumula memoria episódica, semántica, social, autobiográfica y procedimental. Las decisiones son por reglas deterministas con semilla, o bien con un modelo de lenguaje (Claude) para todos o algunos agentes. Incluye experimentos configurables (memoria, entorno, engaño y transferencia entre soportes) con métricas científicas y el Índice de Continuidad Individual. VIDA-0.1 está completo en alcance; sigue VIDA-0.2.
 
 Qué puede responder hoy el sistema sobre cualquier agente (criterio de éxito de 0.1): qué vivió, qué recuerda, qué aprendió, qué prefiere, a quién conoce, qué decisiones tomó y qué experiencias lo modificaron. Ver `python -m vida life`.
 
@@ -57,9 +57,22 @@ ollama pull llama3.2                                       # 2 GB, una sola vez
 
 Sin costo por token. En este equipo (CPU, la GPU AMD vía Vulkan produce texto corrupto y por eso `num_gpu: 0`) cada decisión tarda unos 35 s con `llama3.2`; 2 agentes durante 10 días son ~5 horas. La caché hace que repetir la corrida sea inmediato. En la prueba real de 12 ticks, Ana eligió acciones válidas en todas las decisiones y sus justificaciones fueron coherentes con sus necesidades y relaciones.
 
+## Experimentos y métricas
+
+```bash
+python -m vida experiment memory      --seeds 1,2,3 --ticks 240   # completa / limitada / ausente / sin_olvido
+python -m vida experiment environment --seeds 1,2,3 --ticks 240   # abundancia / normal / escasez
+python -m vida experiment deception   --seeds 1,2,3 --ticks 240   # honestos / neutros / deshonestos / deshonestos_con_escasez
+python -m vida experiment transfer    --seeds 1,2,3 --split 240 --horizon 120 --agent a01
+```
+
+Cada experimento corre sus variantes con cada semilla, calcula las métricas de la sección 30 por agente (memoria, consistencia conductual, estabilidad de preferencias, confianza, engaño, aprendizaje, entropía de decisiones, supervivencia) y guarda `results.json`, `summary.json` y `manifest.json` en `data/experiments/<nombre>/<fecha>/`.
+
+El experimento de **transferencia** simula una vida hasta un tick de corte, clona el mundo entero y en cada clon sustituye la mente del agente estudiado según la condición (completa, sólo memoria, sólo conocimientos, sólo personalidad, parcial, memoria borrada al 50 %, ninguna) conservando el cuerpo. Todos los clones viven el mismo horizonte con los mismos flujos aleatorios. El **Índice de Continuidad Individual** (`evaluation/metrics.py`) compara cada clon con la continuación sin intervención y con el agente previo al corte en ocho dimensiones: memoria, preferencias, personalidad, conocimientos, relaciones, decisiones, autobiografía y autorrepresentación. Es una semejanza entre estados; no mide conciencia.
+
 ## Objetivos de investigación
 
-Ver `docs/objetivos.md`: consciencia artificial → identidad y continuidad → continuidad al cambiar de soporte → preservación indefinida. VIDA-0.1 construye el objeto experimental; no responde ninguna de esas preguntas todavía.
+Ver `docs/objetivos.md`: consciencia artificial → identidad y continuidad → continuidad al cambiar de soporte → preservación indefinida. VIDA-0.1 construye el objeto experimental; no responde ninguna de esas preguntas todavía. Los criterios operativos para el primer objetivo (qué observaciones contarían como evidencia y con qué instrumentos) están en `docs/criterios_consciencia.md`.
 
 ## Dashboard
 

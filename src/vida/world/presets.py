@@ -43,11 +43,15 @@ def village_small(cfg: RunConfig) -> WorldState:
         Location(id="workshop", name="Taller", type="workplace", open_hours=(8, 18), adjacent=["plaza"]),
     ]
     locations = {loc.id: loc for loc in homes + public}
+    factor = cfg.world.restock_factor
+    for loc in locations.values():
+        loc.restock = {r: max(0, int(round(v * factor))) for r, v in loc.restock.items()}
+        loc.resources = {r: max(0, int(round(v * factor))) for r, v in loc.resources.items()}
     days = cfg.run.ticks_per_day
-    scheduled = [
-        WorldEvent(tick=10 * days + 6, kind="shortage", location_id="market", payload={"bread": 3}),
-        WorldEvent(tick=20 * days + 6, kind="shortage", location_id="market", payload={"bread": 0, "fruit": 5}),
-    ]
+    scheduled = []
+    for i, day in enumerate(sorted(cfg.world.shortage_days)):
+        payload = {"bread": 3} if i % 2 == 0 else {"bread": 0, "fruit": 5}
+        scheduled.append(WorldEvent(tick=day * days + 6, kind="shortage", location_id="market", payload=payload))
     return WorldState(
         locations=locations,
         scheduled_events=scheduled,
@@ -78,6 +82,8 @@ def spawn_agents(cfg: RunConfig, world: World, rng: random.Random) -> dict[str, 
                 "general": KnowledgeItem(level=round(rng.uniform(0.0, 0.3), 3), source="initial"),
             },
         )
+        if cfg.agents.initial_honesty is not None:
+            agent.identity.core_values["honesty"] = float(cfg.agents.initial_honesty)
         agent.beliefs.known_locations = sorted(
             loc.id for loc in world.locations.values() if loc.type != "home" or loc.id == home
         )
