@@ -4,7 +4,7 @@ from collections import Counter
 
 from vida.evaluation.metrics import agent_metrics, continuity_index, cosine, entropy, jaccard, js_similarity
 from vida.experiments import VARIANT_EXPERIMENTS
-from vida.experiments.runner import render_summary, run_experiment, summarize
+from vida.experiments.runner import effect_sizes, render_effects, render_summary, run_experiment, summarize
 from vida.experiments.transfer import CONDITIONS, run_transfer
 from vida.simulation.engine import SimulationEngine
 
@@ -73,3 +73,15 @@ def test_transfer_conditions_order_continuity(small_cfg):
     assert 0.0 < by["memoria_borrada_50"]["ici_vs_referencia"] <= 1.0
     # El clon "completa" reproduce exactamente la continuación original: mismo mundo, mismos flujos aleatorios.
     assert by["completa"]["ici_vs_previo"] <= 1.0 and by["completa"]["alive"] == 1.0
+
+
+def test_effect_sizes_rank_metrics_by_difference():
+    rows = [
+        {"variant": "a", "seed": 1, "x": 1.0, "y": 5.0}, {"variant": "a", "seed": 2, "x": 1.2, "y": 5.1},
+        {"variant": "b", "seed": 1, "x": 3.0, "y": 5.0}, {"variant": "b", "seed": 2, "x": 3.2, "y": 5.1},
+    ]
+    eff = effect_sizes(rows, "a", "b")
+    assert [e["metric"] for e in eff] == ["x", "y"]
+    assert eff[0]["d"] < -1.5 and eff[1]["d"] == 0.0
+    assert "x" in render_effects(eff, "a", "b")
+    assert effect_sizes(rows, "a", "zzz") == []

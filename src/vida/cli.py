@@ -141,7 +141,7 @@ def cmd_experiment(args: argparse.Namespace) -> int:
     from datetime import datetime
 
     from vida.experiments import VARIANT_EXPERIMENTS, transfer
-    from vida.experiments.runner import render_summary, run_experiment
+    from vida.experiments.runner import effect_sizes, render_effects, render_summary, run_experiment
 
     cfg = load_config(args.config)
     seeds = [int(s) for s in args.seeds.split(",") if s.strip()]
@@ -165,6 +165,15 @@ def cmd_experiment(args: argparse.Namespace) -> int:
         result = run_experiment(args.name, cfg, variants, seeds=seeds, ticks=args.ticks, out_dir=out_dir, progress=progress)
     print()
     print(render_summary(result["summary"], metrics))
+    if args.effects:
+        a, _, b = args.effects.partition(":")
+        eff = effect_sizes(result["rows"], a.strip(), b.strip())
+        if eff:
+            print()
+            print(f"Tamaños de efecto {a} vs {b} (d de Cohen, |d| mayores):")
+            print(render_effects(eff, a.strip(), b.strip()))
+        else:
+            print(f"No hay filas para comparar {a} y {b}", file=sys.stderr)
     print()
     print(f"Resultados: {result['path']}")
     return 0
@@ -208,6 +217,7 @@ def build_parser() -> argparse.ArgumentParser:
     exp.add_argument("--agent", default="a01", help="transfer: agente estudiado")
     exp.add_argument("--conditions", help="transfer: condiciones separadas por coma")
     exp.add_argument("--out-dir", default=str(Path("data") / "experiments"))
+    exp.add_argument("--effects", help="comparar dos variantes con tamaños de efecto, p. ej. completa:ausente")
     exp.add_argument("--quiet", action="store_true")
     exp.set_defaults(func=cmd_experiment)
     return parser

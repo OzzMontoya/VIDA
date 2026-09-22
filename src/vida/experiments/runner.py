@@ -107,3 +107,34 @@ def render_summary(summary: dict[str, dict[str, dict[str, float]]], metrics: lis
             cells.append(f"{cell['mean']:.3f} ± {cell['sd']:.3f}" if cell else "—")
         lines.append(f"{v:<{width}}" + "".join(f"{c:>24}" for c in cells))
     return "\n".join(lines)
+
+
+def effect_sizes(rows: list[dict[str, Any]], a: str, b: str, top: int = 12) -> list[dict[str, float | str]]:
+    """Tamaño de efecto (d de Cohen con desviación agrupada) de cada métrica entre las variantes ``a`` y ``b``.
+
+    Sirve para descubrir dónde difieren dos condiciones sin haber elegido las
+    métricas de antemano. Devuelve las ``top`` métricas ordenadas por |d|.
+    """
+    ra = [r for r in rows if str(r.get("variant")) == a]
+    rb = [r for r in rows if str(r.get("variant")) == b]
+    if not ra or not rb:
+        return []
+    metrics = sorted(k for k in ra[0] if isinstance(ra[0][k], (int, float)) and k != "seed")
+    out: list[dict[str, float | str]] = []
+    for k in metrics:
+        xa = [float(r[k]) for r in ra if isinstance(r.get(k), (int, float))]
+        xb = [float(r[k]) for r in rb if isinstance(r.get(k), (int, float))]
+        if not xa or not xb:
+            continue
+        pooled = statistics.pstdev(xa + xb)
+        d = (statistics.fmean(xa) - statistics.fmean(xb)) / pooled if pooled > 0 else 0.0
+        out.append({"metric": k, "mean_a": round(statistics.fmean(xa), 6), "mean_b": round(statistics.fmean(xb), 6), "d": round(d, 3)})
+    out.sort(key=lambda e: -abs(float(e["d"])))
+    return out[:top]
+
+
+def render_effects(effects: list[dict[str, float | str]], a: str, b: str) -> str:
+    lines = [f"{'métrica':<30}{a[:12]:>14}{b[:12]:>14}{'d':>8}", "-" * 66]
+    for e in effects:
+        lines.append(f"{str(e['metric']):<30}{float(e['mean_a']):>14.3f}{float(e['mean_b']):>14.3f}{float(e['d']):>+8.2f}")
+    return "\n".join(lines)

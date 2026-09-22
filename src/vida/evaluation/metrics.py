@@ -151,6 +151,20 @@ def _action_distribution(events: list[EventRecord], agent_id: str) -> list[float
     return _distribution(counter, ACTION_KINDS)
 
 
+def _choice_similarity(ev_a: list[EventRecord], id_a: str, ev_b: list[EventRecord], id_b: str) -> float:
+    """Semejanza de las elecciones concretas (clave de decisión: acción + objetivo), no sólo del tipo de acción.
+
+    El tipo de acción lo impone en gran parte el mundo (horarios, necesidades);
+    la individualidad se ve en con quién se conversa, a dónde se va y qué se compra.
+    """
+    ca = Counter(e.decision.chosen for e in ev_a if e.event_type == "action" and e.agent_id == id_a and e.decision)
+    cb = Counter(e.decision.chosen for e in ev_b if e.event_type == "action" and e.agent_id == id_b and e.decision)
+    keys = sorted(set(ca) | set(cb))
+    if not keys:
+        return 1.0
+    return js_similarity(_distribution(ca, keys), _distribution(cb, keys))
+
+
 def continuity_index(a: AgentState, mem_a: AgentMemory, ev_a: list[EventRecord],
                      b: AgentState, mem_b: AgentMemory, ev_b: list[EventRecord]) -> dict[str, float]:
     """ICI: semejanza por dimensión entre dos estados de agente, en [0, 1], y su media.
@@ -173,7 +187,7 @@ def continuity_index(a: AgentState, mem_a: AgentMemory, ev_a: list[EventRecord],
     keys = set(ra) | set(rb)
     dims["relationships"] = round(1.0 - sum(abs(ra.get(k, 0.5 if not k.endswith("familiarity") else 0.0) -
                                                 rb.get(k, 0.5 if not k.endswith("familiarity") else 0.0)) for k in keys) / len(keys), 6) if keys else 1.0
-    dims["decisions"] = js_similarity(_action_distribution(ev_a, a.id), _action_distribution(ev_b, b.id))
+    dims["decisions"] = _choice_similarity(ev_a, a.id, ev_b, b.id)
     auto_a = {r.content for r in mem_a.all() if r.kind == "autobiographical"}
     auto_b = {r.content for r in mem_b.all() if r.kind == "autobiographical"}
     dims["autobiography"] = jaccard(auto_a, auto_b)

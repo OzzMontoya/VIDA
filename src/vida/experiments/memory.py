@@ -10,8 +10,11 @@ from __future__ import annotations
 
 from vida.simulation.config import RunConfig
 
-KEY_METRICS = ["behavioural_consistency", "preference_stability", "failed_acquires", "belief_corrections",
-               "memory_retained", "mean_trust", "alive"]
+# Métricas donde la memoria muestra efecto (tamaños de efecto d > 1.5 en la corrida de 2026-09-22):
+# hábito (entropía y elecciones distintas), dependencia de otros (intercambios de información),
+# vínculo social (confianza, familiaridad) y calidad del automodelo.
+KEY_METRICS = ["decision_entropy", "distinct_choices", "info_exchanges", "mean_trust", "mean_familiarity",
+               "self_model_calibration", "memory_retained", "alive"]
 
 
 def completa(cfg: RunConfig) -> RunConfig:
