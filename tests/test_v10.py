@@ -37,6 +37,7 @@ def test_child_inherits_and_receives_culture(small_world, small_cfg):
 
 def test_births_fill_population_after_deaths(cfg):
     c = _long_cfg(cfg)
+    c.lifecycle.population_cap = c.agents.n_agents
     engine = SimulationEngine(c, run_id="gen", sha="test")
     engine.step()
     # Matamos a un agente al inicio del día 1 y comprobamos que nace un sustituto.
@@ -56,6 +57,7 @@ def test_births_fill_population_after_deaths(cfg):
 
 def test_no_births_when_population_full_or_disabled(cfg):
     c = _long_cfg(cfg)
+    c.lifecycle.population_cap = c.agents.n_agents  # tope = población inicial: sin hueco
     engine = SimulationEngine(c, run_id="full", sha="test")
     engine.run(ticks=72)
     assert engine.births == []
@@ -109,3 +111,11 @@ def test_lineage_report_and_cli(cfg, tmp_path, capsys):
     capsys.readouterr()
     assert main(["--data-dir", str(data), "lineage", "--run", "lincli"]) == 0
     assert "linaje" in capsys.readouterr().out
+
+
+def test_default_cap_allows_early_births_from_young_adults(cfg):
+    c = _long_cfg(cfg)
+    engine = SimulationEngine(c, run_id="early", sha="test")
+    engine.run(ticks=24 * 4)
+    assert len(engine.births) == 2, "tope por defecto = población + 2: dos nacimientos sin necesidad de muertes"
+    assert all(engine.agents[b].generation == 1 for b in engine.births)

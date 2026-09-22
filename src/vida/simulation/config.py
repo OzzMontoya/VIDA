@@ -69,7 +69,7 @@ class LifecycleSection(BaseModel):
     birth_check_days: int = 3  # cada cuántos días se revisa si hay hueco
     birth_age_days: int = 12  # edad inicial del hijo (adolescencia por defecto)
     inheritance: float = 0.5  # peso de la personalidad del progenitor en la del hijo
-    population_cap: int | None = None  # None = n_agents inicial
+    population_cap: int | None = None  # None = n_agents + 2: nacen hijos mientras hay adultos jóvenes
     parent_min_money: float = 6.0
 
 

@@ -285,7 +285,7 @@ class SimulationEngine:
         lc = self.cfg.lifecycle
         if not lc.births or self.clock.hour != 0 or self.clock.day == 0 or self.clock.day % lc.birth_check_days != 0:
             return
-        cap = lc.population_cap or self.cfg.agents.n_agents
+        cap = lc.population_cap if lc.population_cap is not None else self.cfg.agents.n_agents + 2
         if len(self.alive_ids()) >= cap:
             return
         candidates = generations.eligible_parents(self.agents, lc.parent_min_money)
