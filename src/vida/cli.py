@@ -278,14 +278,23 @@ def cmd_society(args: argparse.Namespace) -> int:
             return 1
         agents = _load_final_states(repo, args.run)
         events = repo.all_events(args.run)
+        history = {aid: repo.state_history(args.run, aid) for aid in repo.agents_meta(args.run)}
     finally:
         repo.close()
+    from vida.evaluation.society import criterion3_over_time
+
     report = society_report(agents, events)
+    report["criterion3_over_time"] = criterion3_over_time(history)
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=1))
     else:
         print(f"Corrida {args.run} · análisis de sociedad y criterio 3")
         print(render_society(report))
+        c3 = report["criterion3_over_time"]
+        within = "—" if c3["corr_within_agent_mean"] is None else f"{c3['corr_within_agent_mean']:+.3f}"
+        pooled = "—" if c3["corr_pooled"] is None else f"{c3['corr_pooled']:+.3f}"
+        print(f"Criterio 3 en el tiempo · {c3['pairs']} pares (agente, día): r agrupada = {pooled} · r media dentro de cada agente = {within} "
+              f"({c3['agents_with_positive_within']}/{c3['agents_measured']} agentes con r > 0)")
     return 0
 
 

@@ -97,3 +97,37 @@ def render_society(report: dict[str, Any]) -> str:
         f"Confianza entrante vs reputación pública:        r = {fmt(s['corr_incoming_trust_vs_reputation'])}",
         f"Precio del pan visto por los agentes: mín {s['bread_price_min']} · medio {s['bread_price_mean']} · máx {s['bread_price_max']}",
     ])
+
+
+def criterion3_over_time(state_history: dict[str, list[tuple[int, AgentState]]]) -> dict[str, Any]:
+    """Criterio 3 con todas las instantáneas diarias: pares (agente, día) de valencia y confianza entrante.
+
+    Además de la correlación agrupada, calcula la correlación *dentro* de cada
+    agente (cómo covarían su valencia y la confianza que recibe a lo largo de su
+    vida) y promedia: elimina las diferencias fijas entre individuos.
+    """
+    by_tick: dict[int, dict[str, AgentState]] = {}
+    for aid, hist in state_history.items():
+        for tick, st in hist:
+            by_tick.setdefault(tick, {})[aid] = st
+    pooled_x, pooled_y = [], []
+    per_agent: dict[str, tuple[list[float], list[float]]] = {}
+    for tick in sorted(by_tick):
+        snapshot = by_tick[tick]
+        for aid, st in snapshot.items():
+            if not st.alive:
+                continue
+            trust = incoming_trust(snapshot, aid)
+            if trust is None:
+                continue
+            pooled_x.append(st.emotion.valence); pooled_y.append(trust)
+            xs, ys = per_agent.setdefault(aid, ([], []))
+            xs.append(st.emotion.valence); ys.append(trust)
+    within = [r for r in (pearson(xs, ys) for xs, ys in per_agent.values() if len(xs) >= 5) if r is not None]
+    return {
+        "pairs": len(pooled_x),
+        "corr_pooled": pearson(pooled_x, pooled_y),
+        "corr_within_agent_mean": round(sum(within) / len(within), 6) if within else None,
+        "agents_with_positive_within": sum(1 for r in within if r > 0),
+        "agents_measured": len(within),
+    }

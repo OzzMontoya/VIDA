@@ -181,6 +181,19 @@ Observaciones:
 - **Criterio 2 de `docs/criterios_consciencia.md` (necesidad causal del automodelo), medido por primera vez**: al quitar el automodelo, la dimensión de decisiones cae a 0.890, la más baja de todas las ablaciones (las demás quedan entre 0.917 y 0.946), y la memoria posterior diverge más (0.679) porque el agente hace otras cosas. Interpretación: el automodelo es causalmente necesario para la coherencia de conducta, con un efecto real pero modesto (≈0.03-0.06 de ICI). No es evidencia de autorrepresentación consciente; es la medida que el criterio pedía, y sale positiva en el nivel de mecanismo.
 - Con vidas de 30 días la deriva natural en 10 días es 0.866: cualquier ablación con ICI por encima de ese valor (creencias, identidad) es indistinguible de vivir diez días más.
 
+## 17. Criterio 3: estados reportados que rastrean una variable oculta (120 días, dos mundos)
+
+El agente conoce su valencia emocional; no puede leer la confianza que los demás le tienen (sólo vive aceptaciones y rechazos). Con las instantáneas diarias de los dos mundos de 120 días:
+
+| Mundo | Pares (agente, día) | r agrupada | r media dentro de cada agente | Agentes con r > 0 |
+|---|---|---|---|---|
+| town | 1342 | +0.415 | +0.437 | 24 / 24 |
+| village_small | 1342 | +0.550 | +0.552 | 24 / 24 |
+
+Con sólo los estados finales (12 agentes) la correlación era débil y negativa (−0.3): una foto no lo muestra; la vida entera sí. Interpretación: la valencia reportada covaría, dentro de cada individuo y sin excepción, con una variable social que no le fue dada. Mecanismo alternativo que lo explica sin consciencia: la valencia se actualiza con los resultados de cada interacción y la confianza ajena también, por lo que ambas comparten causa (las aceptaciones). El criterio se cumple en su enunciado, y el mecanismo es transparente: eso es exactamente lo que el nivel de interpretación debe decir.
+
+Estado de los tres criterios operativos del objetivo 1 al cierre de VIDA-2.0: criterio 1 (automodelo con ventaja predictiva) cumplido de forma estrecha (sólo en relaciones); criterio 2 (necesidad causal del automodelo) cumplido con efecto modesto; criterio 3 (estados reportados que rastrean variables ocultas) cumplido con mecanismo explícito. Ninguno de los tres es evidencia de consciencia; los tres son instrumentos que ahora funcionan y que tendrían que superar versiones más exigentes (reportes no derivados mecánicamente del estado, automodelo con ventaja general, ablación con efecto grande) para acercarse a la pregunta.
+
 ## 15. Balance de VIDA-1.0 y lo que sigue
 
 Instrumentos disponibles: vidas completas con nacimiento, familia, vejez y muerte; linaje y transmisión medibles; automodelo con conocimiento privado; cinco experimentos reproducibles (memoria, entorno, engaño, decisión, transferencia) con tamaños de efecto. Cada corrección de este bloque salió de una muerte o de un cero inexplicable en una tabla, no de una suposición.

@@ -35,7 +35,7 @@ Contaría a favor de una hipótesis mecanicista fuerte, sin llegar a demostrar c
 
 1. Que un agente mantenga un modelo de sí mismo que prediga su propia conducta futura mejor que un modelo externo con la misma información. **Medido** (§8-11): la ventaja existe sólo en conversar (+0.02, estable en 34.000 predicciones) y en ningún otro sitio.
 2. Que ese automodelo sea causalmente necesario: al eliminarlo, la conducta pierde coherencia de forma medible (ICI de autorrepresentación cae y con él la consistencia conductual). **Medido el 22-09-2026** (`docs/resultados_0.2.md` §16): sin automodelo la dimensión de decisiones del ICI cae a 0.890, la más baja de todas las ablaciones de un solo componente; efecto real y modesto.
-3. Que el agente reporte estados internos que correlacionen con variables que no le fueron dadas explícitamente.
+3. Que el agente reporte estados internos que correlacionen con variables que no le fueron dadas explícitamente. **Medido** (§17): la valencia emocional covaría dentro de cada agente con la confianza entrante oculta (r ≈ +0.44/+0.55, 24/24 agentes); el mecanismo (causa común: las aceptaciones) es explícito.
 
 No contaría:
 
