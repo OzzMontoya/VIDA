@@ -4,7 +4,7 @@
 
 Plataforma experimental de simulación multiagente para estudiar cómo la memoria, la experiencia, el aprendizaje, las relaciones sociales y el entorno forman, modifican y preservan una identidad individual. Proyecto de investigación de Oziel Atlahi Montoya Mares (UTMA). El documento de diseño completo está en `Proyecto_VIDA_Documento_Completo_v2_1.pdf`.
 
-Estado: **VIDA-0.2 en desarrollo** (sobre el núcleo jugable de 0.1). 10 agentes viven 30 días simulados en un pueblo textual de 12 lugares: trabajan, compran, comen, descansan, estudian, conversan, piden y comparten información (a veces falsa), y cada uno acumula memoria episódica, semántica, social, autobiográfica y procedimental. Las decisiones son por reglas deterministas con semilla, o bien con un modelo de lenguaje (Claude) para todos o algunos agentes. Incluye experimentos configurables (memoria, entorno, engaño y transferencia entre soportes) con métricas científicas y el Índice de Continuidad Individual. VIDA-0.2 añade memoria reflexiva (conclusiones derivadas de varias experiencias), acoplamiento fuerte entre lo vivido y lo que se decide, un automodelo predictivo con métricas de calibración y ventaja frente a un modelo externo, creencias que se debilitan al olvidar, y escala a 100 agentes (`world.n_homes`).
+Estado: **VIDA-1.0 en desarrollo**: vidas completas con generaciones sobre el núcleo de 0.1 y los instrumentos de 0.2. 10 agentes viven 30 días simulados en un pueblo textual de 12 lugares: trabajan, compran, comen, descansan, estudian, conversan, piden y comparten información (a veces falsa), y cada uno acumula memoria episódica, semántica, social, autobiográfica y procedimental. Las decisiones son por reglas deterministas con semilla, o bien con un modelo de lenguaje (Claude) para todos o algunos agentes. Incluye experimentos configurables (memoria, entorno, engaño y transferencia entre soportes) con métricas científicas y el Índice de Continuidad Individual. VIDA-0.2 añade memoria reflexiva (conclusiones derivadas de varias experiencias), acoplamiento fuerte entre lo vivido y lo que se decide, un automodelo predictivo con métricas de calibración y ventaja frente a un modelo externo, creencias que se debilitan al olvidar, y escala a 100 agentes (`world.n_homes`).
 
 Qué puede responder hoy el sistema sobre cualquier agente (criterio de éxito de 0.1): qué vivió, qué recuerda, qué aprendió, qué prefiere, a quién conoce, qué decisiones tomó y qué experiencias lo modificaron. Ver `python -m vida life`.
 
@@ -78,6 +78,14 @@ Antes de cada acción el agente predice, con su propia experiencia **en contexto
 
 - `village_small` (por defecto): 12 lugares, un mercado, dos trabajos con el mismo salario. Rutina forzada; útil para reproducibilidad y tests.
 - `town` (`config/town.yaml`): mercado caro y cercano frente a bazar barato y lejano; granja, taller y mina con salario y desgaste distintos (2.5/0.06, 3.5/0.08, 5.5/0.14); dos plazas. Elegir tiene consecuencias, así que la individualidad se ve más. Los precios y salarios son conocimiento público (`World.public_location_info`); el stock no.
+
+### Generaciones (VIDA-1.0)
+
+Cuando la población viva queda por debajo del tope, cada `birth_check_days` nace un hijo de un adulto vivo: hereda parte de la personalidad (`inheritance`), nace en adolescencia en la casa del progenitor con un tercio de su dinero, recibe como creencias *contadas* lo que el progenitor recuerda haber encontrado (verdadero o no) y empieza con un vínculo familiar mutuo. Cada agente lleva `parent_id` y `generation`; el evento `birth` queda en el registro. `python -m vida lineage --run <id>` compara con el ICI a cada hijo con su progenitor y con los demás adultos de la generación anterior: si se parece más a su progenitor, hubo transmisión.
+
+### Automodelo con conocimiento privado
+
+El automodelo propio antepone a los niveles de contexto público un nivel privado: para conversar, la confianza y el afecto que el agente tiene hacia esa persona y su propia reputación; para trabajar, su habilidad real. El modelo externo de referencia sólo ve el contexto público. Así la ventaja mide exactamente lo que sabe el individuo de sí mismo y de sus relaciones.
 
 ## Objetivos de investigación
 

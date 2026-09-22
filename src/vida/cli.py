@@ -207,6 +207,44 @@ def cmd_selfmodel(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_lineage(args: argparse.Namespace) -> int:
+    from vida.evaluation.lineage import lineage_report, render_lineage
+    from vida.memory.base import AgentMemory
+    from vida.simulation.config import RunConfig
+
+    db = _db_path(Path(args.data_dir), args.run)
+    if not db.exists():
+        print(f"No existe la corrida {args.run} en {db.parent}", file=sys.stderr)
+        return 1
+    repo = RunRepository(db)
+    try:
+        meta = repo.run_meta(args.run)
+        if meta is None:
+            print(f"Corrida no encontrada: {args.run}", file=sys.stderr)
+            return 1
+        cfg = RunConfig.model_validate(json.loads(meta["config_json"]))
+        agents, memories = {}, {}
+        for aid in repo.agents_meta(args.run):
+            hist = repo.state_history(args.run, aid)
+            if not hist:
+                continue
+            agents[aid] = hist[-1][1]
+            mem = AgentMemory(aid, cfg.memory)
+            for rec in repo.memories_for(args.run, aid):
+                mem.records[rec.id] = rec
+            memories[aid] = mem
+        events = repo.all_events(args.run)
+    finally:
+        repo.close()
+    report = lineage_report(agents, memories, events)
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False, indent=1))
+    else:
+        print(f"Corrida {args.run} · linaje y transmisión cultural")
+        print(render_lineage(report) if report["rows"] else "No hubo nacimientos en esta corrida.")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="vida", description="VIDA: simulador de vidas artificiales")
     parser.add_argument("--version", action="version", version=f"vida {__version__}")
@@ -254,6 +292,11 @@ def build_parser() -> argparse.ArgumentParser:
     sm.add_argument("--min-own", type=int, default=6, help="intentos propios mínimos para el desglose por acción")
     sm.add_argument("--json", action="store_true")
     sm.set_defaults(func=cmd_selfmodel)
+
+    ln = sub.add_parser("lineage", help="semejanza hijo–progenitor frente a hijo–otros (transmisión cultural)")
+    ln.add_argument("--run", required=True)
+    ln.add_argument("--json", action="store_true")
+    ln.set_defaults(func=cmd_lineage)
     return parser
 
 

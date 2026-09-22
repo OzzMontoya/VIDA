@@ -88,3 +88,24 @@ def test_own_context_levels_add_private_knowledge(small_world):
     work = own_context_levels(a, "work", None, 9, 24)
     assert work[0].startswith("work|-|skill=ok|e=")
     assert own_context_levels(a, "rest", None, 9, 24)[0].startswith("rest|-|p1")  # sin nivel privado
+
+
+def test_lineage_report_and_cli(cfg, tmp_path, capsys):
+    from vida.cli import main
+    from vida.evaluation.lineage import lineage_report, render_lineage
+
+    c = _long_cfg(cfg)
+    engine = SimulationEngine(c, run_id="lin", sha="test")
+    engine.agents["a03"].needs["health"].level = 0.0
+    engine.run(ticks=120)
+    report = lineage_report(engine.agents, engine.memories, engine.events)
+    assert report["summary"]["children"] >= 1
+    row = report["rows"][0]
+    assert 0.0 <= row["ici_parent"] <= 1.0 and row["generation"] == 1
+    assert "hijo" in render_lineage(report)
+    data = tmp_path / "data"
+    assert main(["--data-dir", str(data), "run", "--config", "config/default.yaml", "--seed", "5", "--ticks", "48",
+                 "--run-id", "lincli", "--log-dir", str(tmp_path / "logs")]) == 0
+    capsys.readouterr()
+    assert main(["--data-dir", str(data), "lineage", "--run", "lincli"]) == 0
+    assert "linaje" in capsys.readouterr().out
