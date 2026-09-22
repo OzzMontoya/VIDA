@@ -45,7 +45,22 @@ Observación: la memoria es el componente con más peso en la continuidad medida
 
 ## 4. Transferencia con la dimensión de decisiones por elecciones concretas
 
-(pendiente de la corrida en curso; se añade al terminar)
+| Condición | ICI vs referencia | ICI vs previo | memoria | preferencias | relaciones | decisiones | autorrepresentación |
+|---|---|---|---|---|---|---|---|
+| completa | 1.000 | 0.834 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| memoria borrada 50 % | 0.787 | 0.784 | 0.512 | 0.943 | 0.938 | 0.875 | 0.798 |
+| parcial | 0.746 | 0.778 | 0.627 | 0.928 | 0.790 | 0.894 | 0.509 |
+| sólo memoria | 0.691 | 0.741 | 0.632 | 0.890 | 0.788 | 0.888 | 0.495 |
+| sólo conocimientos | 0.608 | 0.624 | 0.281 | 0.808 | 0.770 | 0.823 | 0.543 |
+| sólo personalidad | 0.598 | 0.610 | 0.220 | 0.809 | 0.775 | 0.880 | 0.567 |
+| ninguna | 0.578 | 0.601 | 0.235 | 0.857 | 0.795 | 0.863 | 0.520 |
+
+Observaciones:
+
+- Medida por elecciones concretas, la dimensión de decisiones baja de ≈0.98 a 0.82-0.89 y empieza a distinguir condiciones: la memoria transferida conserva mejor las elecciones (0.888) que los conocimientos solos (0.823). Sigue alta en todas porque cinco días en un pueblo de 12 lugares dejan poco margen de elección.
+- Borrar la mitad de la memoria daña menos que trasplantar la memoria completa a una mente nueva (0.787 frente a 0.691): las relaciones propias, las preferencias y la identidad, que se pierden en el trasplante, pesan más de lo que la memoria por sí sola recupera.
+- La autorrepresentación es la dimensión más frágil (≈0.5 en todas las transferencias parciales) y la más ruidosa (sd hasta 0.14): las etiquetas de identidad se recalculan a diario a partir de contadores que la mente nueva empieza de cero.
+- Frente al agente previo al corte, incluso la continuación sin intervención cae a 0.834: cinco días de vida cambian al agente casi tanto como una transferencia parcial. Cualquier medida de continuidad debe compararse con esa deriva natural, no con la identidad perfecta.
 
 ## 5. Lo que estos resultados dicen sobre los objetivos
 
