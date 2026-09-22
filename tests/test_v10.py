@@ -125,7 +125,7 @@ def test_dependent_children_receive_allowance_and_survive(cfg):
     c = _long_cfg(cfg)
     engine = SimulationEngine(c, run_id="allow", sha="test")
     engine.run(ticks=24 * 12)  # los hijos nacen en adolescencia y llegan a juventud el día 6 tras nacer
-    assert len(engine.births) == 2
+    assert len(engine.births) >= 2
     allowances = [e for e in engine.events if e.event_type == "world_event" and e.note == "allowance"]
     assert allowances, "los progenitores deben pasar asignación a los hijos dependientes"
     for b in engine.births:

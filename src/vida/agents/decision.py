@@ -159,6 +159,11 @@ class RuleBasedEngine:
         return any(required.issubset(m.tags) and m.tick >= ctx.tick - horizon for m in ctx.memories)
 
     @staticmethod
+    def _just_moved(ctx: DecisionContext) -> bool:
+        records = ctx.memory.by_kind("episodic")
+        return bool(records) and records[-1].tick == ctx.tick - 1 and "action:move" in records[-1].tags
+
+    @staticmethod
     def _food_in_inventory(agent: AgentState) -> int:
         return sum(agent.inventory.get(f, 0) for f in FOOD_EFFECTS)
 
@@ -273,7 +278,7 @@ class RuleBasedEngine:
                 if held == 0 and agent.money >= min(local_prices.values(), default=min(ctx.prices.values(), default=0.0)):
                     # Exploración: aunque la creencia sea débil, un mercado se vuelve a comprobar.
                     score = max(score, u("hunger") * 0.3)
-            elif ltype == "workplace" and arrival_open and agent.life_stage in {"youth", "adulthood", "old_age"}:
+            elif ltype == "workplace" and arrival_open and agent.life_stage in {"adolescence", "youth", "adulthood", "old_age"}:
                 wage_factor = (info.get("wage") or 3.0) / 3.0
                 money_pressure = max(0.0, 1.0 - agent.money / 20.0) * 0.6 + 0.1
                 score = (u("safety") * 0.5 + money_pressure) * (0.6 + 0.8 * P.conscientiousness) * 0.8 * wage_factor
@@ -291,6 +296,8 @@ class RuleBasedEngine:
             visits = agent.counters.get(f"visit:{loc_id}", 0)
             if visits < 3:
                 score *= 1.0 + 0.3 * P.openness  # apertura: curiosidad por lugares poco conocidos
+            if self._just_moved(ctx):
+                score *= 0.5  # acaba de llegar: encadenar otro desplazamiento debe justificarse mucho
             score = score * self._expectation(ctx, {"action:move", f"loc:{loc_id}"}) - 0.02 * dist
             score += self._preference_bonus(agent, [f"loc:{loc_id}"])
             proposal = ActionProposal(kind="move", target_location=loc_id)

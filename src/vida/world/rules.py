@@ -42,7 +42,7 @@ SOCIAL_BASE_ACCEPT = 0.15
 SOCIAL_TRUST_WEIGHT = 0.45
 SOCIAL_REPUTATION_WEIGHT = 0.25
 SOCIAL_AFFINITY_WEIGHT = 0.15
-WORK_BASE_SUCCESS = 0.35  # p_éxito = base + 0.5·habilidad + 0.15·energía: quién eres cambia cómo te va
+WORK_BASE_SUCCESS = 0.45  # p_éxito = base + 0.4·habilidad + 0.15·energía: quién eres cambia cómo te va
 STUDY_BASE_SUCCESS = 0.40
 
 
@@ -68,8 +68,8 @@ def legal_actions(world: "World", agent: AgentState, perception: PerceptionSnaps
         kinds.append("acquire")
     if any(agent.inventory.get(food, 0) > 0 for food in FOOD_EFFECTS):
         kinds.append("consume")
-    if loc.type == "workplace" and perception.is_open and agent.life_stage in WORKING_STAGES:
-        kinds.append("work")
+    if loc.type == "workplace" and perception.is_open and (agent.life_stage in WORKING_STAGES or agent.life_stage == "adolescence"):
+        kinds.append("work")  # los adolescentes pueden trabajar, con paga reducida
     if loc.type == "school" and perception.is_open:
         kinds.append("study")
     if loc.type == "hospital" and perception.is_open and loc.stock("care") > 0:
@@ -164,12 +164,14 @@ def _work(world, agent, proposal, ctx, perception, base) -> ActionOutcome:
     skill = agent.knowledge_level("job")
     energy = agent.needs["energy"].level
     performance = round((0.5 + 0.5 * skill) * (0.5 + 0.5 * energy), 6)
+    if agent.life_stage == "adolescence":
+        performance = round(performance * 0.5, 6)  # aprendiz: media paga
     loc = world.locations[perception.location_id]
     energy_cost = WORK_ENERGY if loc.work_energy is None else -abs(loc.work_energy)
-    p_success = min(1.0, WORK_BASE_SUCCESS + 0.5 * skill + 0.15 * energy)
+    p_success = min(1.0, WORK_BASE_SUCCESS + 0.4 * skill + 0.15 * energy)
     if ctx.rng.random() >= p_success:
         # Jornada malograda: depende de la habilidad y la energía del individuo, no del mundo.
-        earned = round(world.wage(loc.id) * performance * 0.3, 6)
+        earned = round(world.wage(loc.id) * performance * 0.6, 6)  # jornada mediocre: paga menos, no casi nada
         return ActionOutcome(
             **base, kind="poor_performance", success=False, money_delta=earned,
             need_deltas={"energy": energy_cost, "hunger": WORK_HUNGER}, valence=-0.2,

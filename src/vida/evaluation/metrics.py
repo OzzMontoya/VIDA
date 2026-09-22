@@ -124,6 +124,7 @@ def agent_metrics(agent: AgentState, memory: AgentMemory, events: list[EventReco
         base = initial.knowledge_level(skill) if initial else 0.0
         m[f"skill_gain_{skill}"] = round(agent.knowledge_level(skill) - base, 6)
     m["belief_corrections"] = sum(1 for e in actions for c in e.belief_changes if c.startswith("refute"))
+    m["lies_discovered"] = sum(1 for e in actions for c in e.belief_changes if c.startswith("disproved"))
     m["failed_acquires"] = sum(1 for e in actions if e.outcome.action == "acquire" and e.outcome.kind == "resource_absent")
 
     # Decisiones

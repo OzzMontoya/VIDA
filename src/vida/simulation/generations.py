@@ -5,7 +5,7 @@ un hijo de un adulto vivo elegido con el RNG de la corrida. El hijo:
 
 - hereda parte de la personalidad del progenitor (mezcla con azar, ``inheritance``);
 - nace con la edad de inicio configurada (adolescencia por defecto: puede
-  moverse y estudiar, no trabajar hasta la juventud) en la casa del progenitor;
+  moverse, estudiar y trabajar a media paga) en la casa del progenitor;
 - recibe un tercio del dinero del progenitor;
 - recibe como creencias *contadas por el progenitor* los hechos semánticos que
   éste recuerda (transmisión cultural: pueden ser ciertos o no);

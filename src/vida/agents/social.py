@@ -74,3 +74,14 @@ def update_relationships(agent: AgentState, outcome: ActionOutcome, agents: dict
                 model.honesty_estimate = max(0.0, round(model.honesty_estimate - 0.20, 6))
 
     return deltas
+
+
+def update_after_disproved_info(agent: AgentState, informant_id: str, agents: dict[str, AgentState]) -> dict[str, dict[str, float]]:
+    """Quien prometió algo que no estaba pierde confianza y estima de honestidad (sólo por el hecho observado)."""
+    if informant_id not in agents:
+        return {}
+    rel = agent.relationship_with(informant_id)
+    changed = rel.adjust(trust=-0.15 * rel.trust * 2.0, affection=-0.05 * rel.affection * 2.0)
+    model = agent.beliefs.model_of(informant_id)
+    model.honesty_estimate = max(0.0, round(model.honesty_estimate - 0.20, 6))
+    return {_pair(agent.id, informant_id): changed} if changed else {}

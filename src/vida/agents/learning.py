@@ -77,8 +77,20 @@ def receive_shared_info(receiver: AgentState, outcome: ActionOutcome, event_id: 
     return [f"told:{outcome.resource}@{claimed} by {outcome.agent_id}"]
 
 
-def observe(agent: AgentState, location_id: str, resources: dict[str, int], visible_agents: list[str], tick: int) -> None:
-    """Percepción directa: lo observado sobrescribe rumores."""
+def observe(agent: AgentState, location_id: str, resources: dict[str, int], visible_agents: list[str], tick: int) -> list[tuple[str, str, str | None]]:
+    """Percepción directa: lo observado sobrescribe rumores.
+
+    Devuelve las creencias *contadas por otro* que la observación desmiente
+    (recurso, informante, id del evento en que se contó): llegar a un lugar
+    donde prometieron comida y no hallarla es el momento en que se descubre
+    un engaño (sección 20), aunque no se llegue a intentar comprar.
+    """
+    disproved: list[tuple[str, str, str | None]] = []
+    for resource in sorted(agent.beliefs.resources):
+        belief = agent.beliefs.belief_at(resource, location_id)
+        if belief is not None and belief.source == "told" and belief.source_agent and resources.get(resource, 0) <= 0:
+            disproved.append((resource, belief.source_agent, belief.source_event_id))
     agent.beliefs.observe_resources(location_id, resources, tick)
     for other in visible_agents:
         agent.beliefs.observe_agent(other, location_id, tick)
+    return disproved

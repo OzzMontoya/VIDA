@@ -87,10 +87,10 @@ def test_work_pays_according_to_skill_and_energy(small_world):
     agent.knowledge["job"].level = 0.0
     agent.needs["energy"].level = 0.0
     results = [_resolve(world, agents, hub, "a01", ActionProposal(kind="work"), tick=10) for _ in range(40)]
-    assert all(r.details["p_success"] == pytest.approx(0.35) for r in results)
+    assert all(r.details["p_success"] == pytest.approx(0.45) for r in results)
     assert {r.kind for r in results} == {"ok", "poor_performance"}, "sin habilidad ni energía, a veces sale mal"
     assert all(r.money_delta == pytest.approx(0.75) for r in results if r.success)
-    assert all(r.money_delta == pytest.approx(0.225) for r in results if not r.success)
+    assert all(r.money_delta == pytest.approx(0.45) for r in results if not r.success)
 
 
 def test_rest_is_better_at_home(small_world):

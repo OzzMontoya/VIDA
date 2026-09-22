@@ -193,6 +193,17 @@ class World:
                 bump(source, -0.05)
         return deltas
 
+    def penalize_disproved(self, informant_id: str, source_event_id: str | None, agents: dict[str, AgentState]) -> dict[str, float]:
+        """Si el libro de información registra que el mensaje fue engañoso, cae la reputación de la fuente."""
+        ledger = self.state.info_ledger.get(source_event_id or "", {})
+        source = agents.get(informant_id)
+        if source is None or not ledger.get("deceptive"):
+            return {}
+        before = source.reputation
+        source.reputation = max(0.0, min(1.0, source.reputation - 0.05))
+        real = round(source.reputation - before, 6)
+        return {source.id: real} if real else {}
+
     # --- colocación --------------------------------------------------------
     def place_agent(self, agent_id: str, location_id: str) -> None:
         if location_id not in self.locations:

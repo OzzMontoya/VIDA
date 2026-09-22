@@ -143,7 +143,18 @@ class SimulationEngine:
         perception = ctx.perception
 
         # Percepción directa: creencias y hechos semánticos sobre lo observado (una vez por lugar y día).
-        learning.observe(agent, perception.location_id, perception.visible_resources, perception.visible_agents, tick)
+        disproved = learning.observe(agent, perception.location_id, perception.visible_resources, perception.visible_agents, tick)
+        discovery_rel: dict[str, dict[str, float]] = {}
+        discovery_rep: dict[str, float] = {}
+        discovery_notes: list[str] = []
+        for resource, informant, source_event in disproved:
+            discovery_rel.update(social.update_after_disproved_info(agent, informant, self.agents))
+            discovery_rep.update(self.world.penalize_disproved(informant, source_event, self.agents))
+            discovery_notes.append(f"disproved:{resource}@{perception.location_id} by {informant}")
+            memory.add("social", tick, f"{self.names.get(informant, informant)} me dijo que habría {resource} en "
+                                       f"{perception.location_id} y no había", importance=0.7, valence=-0.6,
+                       tags={f"agent:{informant}", "outcome:disproved", f"res:{resource}", f"loc:{perception.location_id}"})
+            agent.bump_counter("discovered_lie")
         loc = self.world.locations[perception.location_id]
         key = (agent.id, perception.location_id, self.clock.day)
         if loc.restock and key not in self._observed_today:
@@ -219,10 +230,14 @@ class SimulationEngine:
         self._day_outcomes[agent.id].append(outcome)
         event.outcome = outcome
         event.memories_created = created
+        for pair, d in discovery_rel.items():
+            rel_deltas[pair] = {**rel_deltas.get(pair, {}), **d}
+        for aid, d in discovery_rep.items():
+            rep_deltas[aid] = round(rep_deltas.get(aid, 0.0) + d, 6)
         event.relationship_deltas = rel_deltas
         event.reputation_deltas = rep_deltas
         event.preference_deltas = pref_deltas
-        event.belief_changes = belief_changes
+        event.belief_changes = discovery_notes + belief_changes
         event.state_after = agent.summary()
         event.world_delta = outcome.world_delta
         self._emit(event)
@@ -321,7 +336,8 @@ class SimulationEngine:
             return
         for aid in self.alive_ids():
             child = self.agents[aid]
-            if child.life_stage not in {"infancy", "adolescence"} or not child.parent_id:
+            dependent = child.life_stage in {"infancy", "adolescence"} or (child.life_stage == "youth" and child.money < 5.0)
+            if not dependent or not child.parent_id:
                 continue
             parent = self.agents.get(child.parent_id)
             if parent is None or not parent.alive:

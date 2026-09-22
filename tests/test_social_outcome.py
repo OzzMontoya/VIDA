@@ -128,3 +128,29 @@ def test_identity_tags_follow_behaviour(small_world):
     assert a.identity.core_values["honesty"] > 0.5 and a.identity.core_values["ambition"] > 0.5
     a.counters["reply:lie"] = 4
     assert "engañoso" in identity.refresh(a)
+
+
+def test_lie_is_discovered_on_arrival_without_buying(small_world, small_cfg):
+    """Llegar donde prometieron pan y no verlo basta para desconfiar del informante (sección 20)."""
+    from vida.simulation.engine import SimulationEngine
+
+    engine = SimulationEngine(small_cfg, run_id="disc", sha="test")
+    a, b = engine.agents["a01"], engine.agents["a02"]
+    engine.world.state.info_ledger["ev_lie"] = {"deceptive": True}
+    a.beliefs.told("bread", "school", by="a02", event_id="ev_lie", tick=0)
+    engine.world.place_agent("a01", "school"); a.location_id = "school"
+    trust_before = a.relationship_with("a02").trust
+    rep_before = b.reputation
+    event = engine._agent_turn(a)
+    assert any(c.startswith("disproved:bread@school by a02") for c in event.belief_changes)
+    assert a.relationship_with("a02").trust < trust_before
+    assert a.beliefs.model_of("a02").honesty_estimate == 0.3
+    assert b.reputation < rep_before and event.reputation_deltas.get("a02", 0) < 0
+    assert a.counters.get("discovered_lie") == 1
+    assert any("no había" in m.content for m in engine.memories["a01"].by_kind("social"))
+    # Una promesa honesta pero desmentida por el mundo no toca la reputación (el libro no la marca engañosa).
+    engine.world.state.info_ledger["ev_ok"] = {"deceptive": False}
+    a.beliefs.told("fruit", "school", by="a02", event_id="ev_ok", tick=1)
+    rep_mid = b.reputation
+    engine._agent_turn(a)
+    assert b.reputation == rep_mid
