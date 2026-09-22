@@ -64,9 +64,13 @@ python -m vida experiment memory      --seeds 1,2,3 --ticks 240   # completa / l
 python -m vida experiment environment --seeds 1,2,3 --ticks 240   # abundancia / normal / escasez
 python -m vida experiment deception   --seeds 1,2,3 --ticks 240   # honestos / neutros / deshonestos / deshonestos_con_escasez
 python -m vida experiment transfer    --seeds 1,2,3 --split 240 --horizon 120 --agent a01
+python -m vida experiment decision    --seeds 1,2,3 --ticks 240   # historias distintas ante la misma situación
+python -m vida experiment memory      --seeds 1,2,3 --ticks 360 --effects completa:ausente   # tamaños de efecto entre dos variantes
 ```
 
 Cada experimento corre sus variantes con cada semilla, calcula las métricas de la sección 30 por agente (memoria, consistencia conductual, estabilidad de preferencias, confianza, engaño, aprendizaje, entropía de decisiones, supervivencia) y guarda `results.json`, `summary.json` y `manifest.json` en `data/experiments/<nombre>/<fecha>/`.
+
+El experimento de **decisión** (sección 19) coloca, tras diez días de vida, a todos los agentes en la misma situación (mismo lugar, hora, necesidades y dinero) y compara lo que elige cada uno con su historia frente a lo que elegiría con la misma personalidad pero sin historia: `share_changed` es la fracción cuya elección cambia al quitarle lo vivido.
 
 El experimento de **transferencia** simula una vida hasta un tick de corte, clona el mundo entero y en cada clon sustituye la mente del agente estudiado según la condición (completa, sólo memoria, sólo conocimientos, sólo personalidad, parcial, memoria borrada al 50 %, ninguna) conservando el cuerpo. Todos los clones viven el mismo horizonte con los mismos flujos aleatorios. El **Índice de Continuidad Individual** (`evaluation/metrics.py`) compara cada clon con la continuación sin intervención y con el agente previo al corte en ocho dimensiones: memoria, preferencias, personalidad, conocimientos, relaciones, decisiones, autobiografía y autorrepresentación. Es una semejanza entre estados; no mide conciencia.
 
