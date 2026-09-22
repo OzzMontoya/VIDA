@@ -194,11 +194,29 @@ Con sólo los estados finales (12 agentes) la correlación era débil y negativa
 
 Estado de los tres criterios operativos del objetivo 1 al cierre de VIDA-2.0: criterio 1 (automodelo con ventaja predictiva) cumplido de forma estrecha (sólo en relaciones); criterio 2 (necesidad causal del automodelo) cumplido con efecto modesto; criterio 3 (estados reportados que rastrean variables ocultas) cumplido con mecanismo explícito. Ninguno de los tres es evidencia de consciencia; los tres son instrumentos que ahora funcionan y que tendrían que superar versiones más exigentes (reportes no derivados mecánicamente del estado, automodelo con ventaja general, ablación con efecto grande) para acercarse a la pregunta.
 
+## 18. Sociedad de 100 agentes (`config/society.yaml`, 30 días, precios dinámicos, reputación pública)
+
+73.412 eventos en unos 20 minutos. Los 100 fundadores y 2 hijos vivos al día 30; Gini del dinero 0.24; el pan osciló entre 1.2 y 3.6 (media 1.99) por la escasez local.
+
+| Medida | 100 agentes | 10 agentes (120 días, town) |
+|---|---|---|
+| Reputación pública vs aceptación social (r) | +0.43 | +0.57 |
+| Confianza entrante vs reputación (r) | +0.59 | +0.33 |
+| Criterio 3 dentro de cada agente (r; agentes con r > 0) | +0.25 (87/102) | +0.44 (24/24) |
+| Ventaja del automodelo en conversar | **+0.053** (n = 2295) | +0.018 (n = 5069) |
+
+Observaciones:
+
+- La reputación pública funciona como institución: predice quién acepta conversar y coincide con la confianza que la gente realmente tiene. Con 100 agentes es un mejor resumen de la confianza ajena (r = 0.59) que con 10, donde todos se conocen directamente.
+- El criterio 3 se debilita con la población (cada par interactúa menos, la confianza entrante es un promedio sobre muchos), pero sigue positivo en el 85 % de los agentes.
+- **La ventaja del automodelo en conversar se triplica con la población** (+0.053): cuando hay cien personas, saber lo que uno tiene con cada una vale más de lo que la población puede decir. La información individual predictiva crece con la complejidad social. Es el resultado más claro hasta ahora a favor de que el criterio 1 escala.
+- Escala: 100 agentes × 30 días con base de datos corren en una PC sin GPU en unos 20 minutos; 1.000 agentes (fase 2) exigiría optimizar la recuperación de memoria y la persistencia.
+
 ## 15. Balance de VIDA-1.0 y lo que sigue
 
 Instrumentos disponibles: vidas completas con nacimiento, familia, vejez y muerte; linaje y transmisión medibles; automodelo con conocimiento privado; cinco experimentos reproducibles (memoria, entorno, engaño, decisión, transferencia) con tamaños de efecto. Cada corrección de este bloque salió de una muerte o de un cero inexplicable en una tabla, no de una suposición.
 
-Siguiente bloque (VIDA-2.0, sociedad): 100+ agentes, economía con precios que respondan a la escasez, instituciones (escuela y hospital con reglas), reputación pública consultable, y el experimento de identidad de la fase 4 (eliminación selectiva de componentes con vidas largas). Antes, dos deudas: un motor LLM probado contra la API real y un dashboard con vista de linaje.
+VIDA-2.0 (sociedad) quedó hecho el mismo día: precios dinámicos, reputación pública, 100 agentes, ablaciones de identidad, análisis de sociedad y vista de linaje en el dashboard; resultados en las secciones 16-18. Deuda que sigue abierta: el motor LLM nunca se ha probado contra la API real de Anthropic (no hay clave en este equipo). Siguiente bloque propuesto (VIDA-3.0, civilización): transmisión cultural explícita (normas y costumbres que los hijos aprenden y que cambian la conducta), instituciones con reglas (escuela que certifica, hospital con prioridad), rendimiento para 1.000 agentes, y versiones más exigentes de los tres criterios.
 
 ## 12. Experimento de decisión: la misma situación, historias distintas (10 días, 3 semillas)
 
