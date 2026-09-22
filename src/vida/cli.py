@@ -255,6 +255,40 @@ def cmd_lineage(args: argparse.Namespace) -> int:
     return 0
 
 
+def _load_final_states(repo: RunRepository, run_id: str) -> dict:
+    agents = {}
+    for aid in repo.agents_meta(run_id):
+        hist = repo.state_history(run_id, aid)
+        if hist:
+            agents[aid] = hist[-1][1]
+    return agents
+
+
+def cmd_society(args: argparse.Namespace) -> int:
+    from vida.evaluation.society import render_society, society_report
+
+    db = _db_path(Path(args.data_dir), args.run)
+    if not db.exists():
+        print(f"No existe la corrida {args.run} en {db.parent}", file=sys.stderr)
+        return 1
+    repo = RunRepository(db)
+    try:
+        if repo.run_meta(args.run) is None:
+            print(f"Corrida no encontrada: {args.run}", file=sys.stderr)
+            return 1
+        agents = _load_final_states(repo, args.run)
+        events = repo.all_events(args.run)
+    finally:
+        repo.close()
+    report = society_report(agents, events)
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False, indent=1))
+    else:
+        print(f"Corrida {args.run} · análisis de sociedad y criterio 3")
+        print(render_society(report))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="vida", description="VIDA: simulador de vidas artificiales")
     parser.add_argument("--version", action="version", version=f"vida {__version__}")
@@ -307,6 +341,11 @@ def build_parser() -> argparse.ArgumentParser:
     ln.add_argument("--run", required=True)
     ln.add_argument("--json", action="store_true")
     ln.set_defaults(func=cmd_lineage)
+
+    so = sub.add_parser("society", help="análisis de sociedad: criterio 3, reputación, desigualdad, precios")
+    so.add_argument("--run", required=True)
+    so.add_argument("--json", action="store_true")
+    so.set_defaults(func=cmd_society)
     return parser
 
 
