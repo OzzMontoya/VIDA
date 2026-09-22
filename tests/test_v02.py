@@ -161,3 +161,22 @@ def test_hundred_agents_scale(cfg):
     engine = SimulationEngine(c, run_id="scale", world=world, agents=agents, sha="test")
     summary = engine.run(ticks=12)
     assert summary.n_agents == 100 and summary.n_events >= 1200
+
+
+def test_selfmodel_analysis_and_cli(small_cfg, tmp_path, capsys):
+    from vida.cli import main
+    from vida.evaluation.selfmodel_analysis import advantage_by_evidence, render_selfmodel_analysis
+
+    engine = SimulationEngine(small_cfg, run_id="sm", sha="test")
+    engine.run(ticks=96)
+    result = advantage_by_evidence(engine.events, 24)
+    assert result["by_evidence"] and all(-1.0 <= r["advantage"] <= 1.0 for r in result["by_evidence"])
+    assert sum(r["n"] for r in result["by_evidence"]) == sum(1 for e in engine.events if e.event_type == "action")
+    text = render_selfmodel_analysis(result)
+    assert "intentos propios" in text
+    data = tmp_path / "data"
+    assert main(["--data-dir", str(data), "run", "--config", "config/default.yaml", "--seed", "3", "--ticks", "48",
+                 "--run-id", "smcli", "--log-dir", str(tmp_path / "logs")]) == 0
+    capsys.readouterr()
+    assert main(["--data-dir", str(data), "selfmodel", "--run", "smcli"]) == 0
+    assert "criterio 1" in capsys.readouterr().out

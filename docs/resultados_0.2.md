@@ -87,8 +87,36 @@ Observación: incluso en igualdad de especificidad, la historia individual no ap
 
 Observación: con alternativas reales (dos mercados, tres trabajos), una mente nueva en el mismo cuerpo se aleja más de la original (0.537 frente a 0.578) y la dimensión de decisiones discrimina más (0.75-0.84). El orden de las condiciones se mantiene en los dos mundos, lo que sugiere que el instrumento es estable. La deriva natural en cinco días sigue en 0.834.
 
+## 8. Consecuencias dependientes del individuo y ventaja por evidencia
+
+Se hizo que trabajar y estudiar puedan fallar según habilidad, energía y apertura, y que la aceptación de una conversación dependa de la confianza, la reputación y la afinidad de personalidad. Los 10 agentes sobreviven en ambos mundos. La ventaja emparejada media siguió negativa (−0.028 y −0.03), así que se reanalizaron los eventos por **cantidad de evidencia propia** en el contexto exacto (`python -m vida selfmodel --run <id>`):
+
+| Intentos propios | n (village) | ventaja | n (town) | ventaja |
+|---|---|---|---|---|
+| 0-2 | 2667 | −0.021 | 2953 | −0.020 |
+| 3-5 | 1287 | −0.051 | 1365 | −0.052 |
+| 6-10 | 1219 | −0.033 | 1078 | −0.033 |
+| 11-20 | 1186 | −0.015 | 918 | −0.014 |
+| 21-50 | 840 | −0.004 | 845 | −0.002 |
+| 51+ | 1 | — | 41 | **+0.033** |
+
+Por acción, con al menos 6 intentos propios:
+
+| Acción | ventaja (village) | ventaja (town) |
+|---|---|---|
+| conversar | **+0.027** | **+0.020** |
+| trabajar | −0.008 | +0.010 |
+| descansar, comer, comprar, moverse | −0.03 a −0.045 | −0.03 a −0.044 |
+
+Observaciones:
+
+- La desventaja media es un efecto de muestra: con pocos intentos el estimador propio es ruidoso y el poblacional no. Al crecer la evidencia la diferencia converge a cero y, con más de 50 intentos, se vuelve positiva.
+- En **conversar**, la única acción cuyo resultado depende de la relación entre dos individuos concretos, la historia propia predice mejor que la población con el mismo contexto. En las acciones deterministas la población gana porque aprende antes que "siempre sale bien".
+- Interpretación: el criterio 1 se cumple **de forma estrecha y localizada**: existe información individual predictiva exactamente donde el mundo la genera (relaciones), y en ningún otro sitio. No es evidencia de autorrepresentación; es la demostración de que el instrumento detecta señal individual cuando la hay.
+- Métrica nueva por agente: `self_model_advantage_social` (ventaja emparejada restringida a conversar).
+
 ## 5. Lo que estos resultados dicen sobre los objetivos
 
 - **Objetivo 2 (identidad y continuidad)**: en este mundo, "quién es" el agente vive sobre todo en su memoria y sus relaciones; la personalidad fija pesa poco porque las reglas de decisión la usan débilmente. Un mundo con más opciones y menos rutina forzada haría más visibles las diferencias.
 - **Objetivo 3 (cambio de soporte)**: el experimento de transferencia ya es reproducible y ordena las condiciones de forma estable. Es el instrumento; los números aún describen un mundo pequeño.
-- **Objetivo 1 (consciencia)**: el primer criterio operativo (automodelo con ventaja predictiva) se midió con y sin contexto, y con comparación emparejada: negativo en todos los casos. La causa identificada no está en el automodelo sino en el mundo: los resultados no dependen del individuo. Siguiente paso: consecuencias dependientes de habilidad, reputación y relaciones, y repetir la medición.
+- **Objetivo 1 (consciencia)**: el primer criterio operativo (automodelo con ventaja predictiva) se midió con y sin contexto, y con comparación emparejada: negativo en todos los casos. Con consecuencias dependientes del individuo y análisis por evidencia (sección 8), la ventaja aparece sólo en conversar y con mucha experiencia: el instrumento detecta señal individual donde el mundo la genera. Siguiente paso: vidas más largas (VIDA-1.0) para acumular evidencia, y un automodelo que use también rasgos propios (habilidad, reputación) en lugar de sólo conteos.

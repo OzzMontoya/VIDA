@@ -179,6 +179,32 @@ def cmd_experiment(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_selfmodel(args: argparse.Namespace) -> int:
+    from vida.evaluation.selfmodel_analysis import advantage_by_evidence, render_selfmodel_analysis
+
+    db = _db_path(Path(args.data_dir), args.run)
+    if not db.exists():
+        print(f"No existe la corrida {args.run} en {db.parent}", file=sys.stderr)
+        return 1
+    repo = RunRepository(db)
+    try:
+        meta = repo.run_meta(args.run)
+        if meta is None:
+            print(f"Corrida no encontrada: {args.run}", file=sys.stderr)
+            return 1
+        tpd = int(json.loads(meta["config_json"])["run"]["ticks_per_day"])
+        events = repo.all_events(args.run)
+    finally:
+        repo.close()
+    result = advantage_by_evidence(events, tpd, min_own_for_actions=args.min_own)
+    if args.json:
+        print(json.dumps(result, ensure_ascii=False, indent=1))
+    else:
+        print(f"Corrida {args.run} · criterio 1: ¿la historia propia predice mejor que la población con el mismo contexto?")
+        print(render_selfmodel_analysis(result))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="vida", description="VIDA: simulador de vidas artificiales")
     parser.add_argument("--version", action="version", version=f"vida {__version__}")
@@ -220,6 +246,12 @@ def build_parser() -> argparse.ArgumentParser:
     exp.add_argument("--effects", help="comparar dos variantes con tamaños de efecto, p. ej. completa:ausente")
     exp.add_argument("--quiet", action="store_true")
     exp.set_defaults(func=cmd_experiment)
+
+    sm = sub.add_parser("selfmodel", help="ventaja del automodelo por evidencia propia y por acción (criterio 1)")
+    sm.add_argument("--run", required=True)
+    sm.add_argument("--min-own", type=int, default=6, help="intentos propios mínimos para el desglose por acción")
+    sm.add_argument("--json", action="store_true")
+    sm.set_defaults(func=cmd_selfmodel)
     return parser
 
 

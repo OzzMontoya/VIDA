@@ -87,6 +87,10 @@ def agent_metrics(agent: AgentState, memory: AgentMemory, events: list[EventReco
     m["self_model_advantage_matched"] = agent.self_model.advantage_matched()
     m["self_model_matched_n"] = agent.self_model.matched_n
     m["self_model_n"] = agent.self_model.n
+    social_pred = [e.prediction for e in actions if e.prediction and e.prediction.get("matched") and e.outcome.action == "socialize"]
+    m["self_model_advantage_social"] = round(
+        sum(p["baseline_error"] - p["error"] for p in social_pred) / len(social_pred), 6) if social_pred else 0.0
+    m["self_model_social_n"] = len(social_pred)
 
     # Identidad y consistencia conductual
     half = len(actions) // 2
