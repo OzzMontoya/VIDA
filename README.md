@@ -88,6 +88,7 @@ Antes de cada acción el agente predice, con su propia experiencia **en contexto
 - **Precios dinámicos**: el precio de un recurso en un lugar es su precio base × (1 + 0.8·(1 − stock/reposición)), acotado entre 0.6 y 2.0: la escasez local encarece y el exceso abarata (`world.dynamic_prices`).
 - **Reputación pública**: cada agente ve la reputación de quienes tiene delante (`PerceptionSnapshot.visible_reputations`) y la usa para elegir con quién conversar, a quién preguntar y cuánto creer.
 - **Escala**: la reposición diaria se multiplica por n_agents/10; `config/society.yaml` corre 100 agentes en `town` con 25 casas.
+- **Análisis de sociedad**: `python -m vida society --run <id>` mide el criterio 3 de `docs/criterios_consciencia.md` (correlación entre la valencia emocional que el agente reporta y la confianza que los demás le tienen, que él no puede leer), la relación entre reputación pública y aceptación social, la desigualdad (Gini) y el rango de precios observado.
 - **Ablaciones de identidad** (fase 4): `vida experiment transfer --conditions completa,sin_relaciones,sin_preferencias,sin_automodelo,sin_identidad,sin_creencias,ninguna` quita un solo componente de la mente y mide cuánta continuidad se pierde.
 
 ### Generaciones (VIDA-1.0)
