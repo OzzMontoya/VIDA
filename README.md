@@ -72,7 +72,12 @@ El experimento de **transferencia** simula una vida hasta un tick de corte, clon
 
 ### Automodelo predictivo (VIDA-0.2)
 
-Antes de cada acción el agente predice, con su propia memoria, la probabilidad de éxito; el mundo resuelve y se registra el error junto con el de un modelo externo (tasa de éxito poblacional). Métricas por agente: `self_model_calibration` (1 − error medio) y `self_model_advantage` (error externo − error propio; positivo si el agente se predice mejor que un observador con la información de toda la población). Es el primer instrumento del criterio 1 de `docs/criterios_consciencia.md`. El error reciente amplía la exploración del agente (metacognición mínima, medible).
+Antes de cada acción el agente predice, con su propia experiencia **en contexto** (acción, objetivo, franja del día, estado de hambre y energía, con retroceso a contextos más generales cuando falta evidencia), la probabilidad de éxito; el mundo resuelve y se registra el error junto con el de un modelo externo que conoce el mismo contexto pero con los datos de toda la población. Métricas por agente: `self_model_calibration` (1 − error medio) y `self_model_advantage` (error externo − error propio; positivo si el agente se predice mejor que un observador con la información de toda la población). Es el primer instrumento del criterio 1 de `docs/criterios_consciencia.md`. El error reciente amplía la exploración del agente (metacognición mínima, medible).
+
+### Mundos
+
+- `village_small` (por defecto): 12 lugares, un mercado, dos trabajos con el mismo salario. Rutina forzada; útil para reproducibilidad y tests.
+- `town` (`config/town.yaml`): mercado caro y cercano frente a bazar barato y lejano; granja, taller y mina con salario y desgaste distintos (2.5/0.06, 3.5/0.08, 5.5/0.14); dos plazas. Elegir tiene consecuencias, así que la individualidad se ve más. Los precios y salarios son conocimiento público (`World.public_location_info`); el stock no.
 
 ## Objetivos de investigación
 
