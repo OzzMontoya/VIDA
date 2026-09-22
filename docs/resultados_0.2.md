@@ -148,6 +148,18 @@ Observaciones:
 
 (pendiente de las corridas en curso)
 
+## 12. Experimento de decisión: la misma situación, historias distintas (10 días, 3 semillas)
+
+Todos los agentes se colocan en la misma situación y deciden dos veces: con su historia y con la misma personalidad sin historia (memoria, preferencias, relaciones, creencias y automodelo en blanco).
+
+| Escenario | Entropía con historia | Entropía sin historia | Elecciones distintas con / sin | Cambian al quitar la historia |
+|---|---|---|---|---|
+| plaza al mediodía (necesidades medias) | 2.34 | 1.16 | 6.3 / 2.7 | 55 % |
+| casa de noche (cansancio y soledad) | 2.80 | 1.48 | 8.3 / 4.7 | 43 % |
+| mercado con hambre (0.2) | 0.28 | 0.00 | 1.3 / 1.0 | 9 % |
+
+Observación: lo vivido duplica la diversidad de conducta cuando la situación deja margen y cambia la elección de cerca de la mitad de los agentes; cuando la situación aprieta, la necesidad manda y la historia casi no cuenta. La personalidad sola, sin historia, produce mucha menos variedad de la que muestran los agentes con vida. Es la primera cuantificación directa de la hipótesis general del documento (sección 8): experiencias acumuladas producen diferencias conductuales estables entre agentes inicialmente comparables.
+
 ## 5. Lo que estos resultados dicen sobre los objetivos
 
 - **Objetivo 2 (identidad y continuidad)**: en este mundo, "quién es" el agente vive sobre todo en su memoria y sus relaciones; la personalidad fija pesa poco porque las reglas de decisión la usan débilmente. Un mundo con más opciones y menos rutina forzada haría más visibles las diferencias. Con generaciones (sección 10) aparece una segunda forma de continuidad, la transmisión a los hijos: medible, parcial y dominada por la experiencia propia del hijo.
