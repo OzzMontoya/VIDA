@@ -28,6 +28,7 @@ class RunSection(BaseModel):
 
 class WorldSection(BaseModel):
     preset: str = "village_small"
+    n_homes: int = 5  # casas del pueblo; los agentes se reparten entre ellas
     restock_factor: float = 1.0  # multiplica la reposición diaria (abundancia > 1, escasez < 1)
     shortage_days: list[int] = Field(default_factory=lambda: [10, 20])  # días con escasez programada en el mercado
 

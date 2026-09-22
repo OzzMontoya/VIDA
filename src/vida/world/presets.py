@@ -28,7 +28,7 @@ COMMON_KNOWLEDGE: dict[str, list[tuple[str, float]]] = {
 
 
 def village_small(cfg: RunConfig) -> WorldState:
-    homes = [Location(id=f"home_{i}", name=f"Casa {i}", type="home", adjacent=["plaza"]) for i in range(1, 6)]
+    homes = [Location(id=f"home_{i}", name=f"Casa {i}", type="home", adjacent=["plaza"]) for i in range(1, max(1, cfg.world.n_homes) + 1)]
     public = [
         Location(id="plaza", name="Plaza central", type="plaza",
                  adjacent=[h.id for h in homes] + ["park", "market", "school", "hospital", "farm", "workshop"]),

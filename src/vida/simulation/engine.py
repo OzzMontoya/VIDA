@@ -22,8 +22,9 @@ from vida import __version__
 from vida.agents import identity, learning, social
 from vida.agents.agent import AgentState
 from vida.agents.decision import DecisionContext, DecisionEngine, build_engine
+from vida.agents.selfmodel import PopulationModel, predict_success
 from vida.database.repository import RunRepository
-from vida.memory import autobiographical, episodic, procedural, semantic
+from vida.memory import autobiographical, episodic, procedural, reflective, semantic
 from vida.memory import social as social_memory
 from vida.memory.base import AgentMemory
 from vida.simulation import lifecycle
@@ -93,6 +94,7 @@ class SimulationEngine:
         self._day_outcomes: dict[str, list[ActionOutcome]] = {aid: [] for aid in self.agents}
         self._observed_today: set[tuple[str, str, int]] = set()
         self._location_info = self.world.public_location_info()
+        self.population_model = PopulationModel()
         self._prices = {r: self.world.price(r) for r in sorted(PURCHASABLE | {"care"})}
 
     # --- utilidades --------------------------------------------------------
@@ -161,10 +163,20 @@ class SimulationEngine:
         if proposal.kind == "share_info" and "truthful" in proposal.payload:
             agent.bump_counter("share:truth" if proposal.payload["truthful"] else "share:lie")
 
+        # Automodelo: el agente predice su propio éxito antes de actuar; el mundo decide después.
+        pred_tags = {f"action:{proposal.kind}"} | ({f"res:{proposal.resource}"} if proposal.resource else set()) \
+            | ({f"agent:{proposal.target_agent}"} if proposal.target_agent else set())
+        predicted = predict_success(memory, pred_tags)
+        baseline = self.population_model.rate(proposal.kind)
+
         event = self._next_event("action", agent.id, perception=perception, state_before=state_before,
                                  retrieved_memory_ids=[m.id for m in ctx.memories], decision=decision, proposal=proposal)
         outcome = self.world.resolve(agent, proposal, self.agents, self.hub.sub("world"), tick, event.event_id)
         agent.apply_outcome(outcome)
+        own_err, base_err = agent.self_model.record(predicted, baseline, outcome.success, window=self.cfg.run.ticks_per_day)
+        self.population_model.update(proposal.kind, outcome.success)
+        event.prediction = {"p_success": predicted, "baseline": baseline, "actual": 1.0 if outcome.success else 0.0,
+                            "error": round(own_err, 6), "baseline_error": round(base_err, 6)}
         for other_id, deltas in sorted(outcome.other_need_deltas.items()):
             if other_id in self.agents:
                 self.agents[other_id].apply_need_deltas(deltas)
@@ -245,7 +257,17 @@ class SimulationEngine:
             memory = self.memories[aid]
             autobiographical.daily_summary(memory, agent, day, tick, self._day_outcomes[aid], self.names)
             self._day_outcomes[aid] = []
+            if agent.alive:
+                reflective.reflect(memory, agent, tick, self.cfg.run.ticks_per_day)
+            before = set(memory.records)
             memory.consolidate(tick, self.cfg.run.ticks_per_day)
+            # Las creencias dependen de la memoria: olvidar un hecho semántico debilita la creencia asociada.
+            for rec in memory.forgotten:
+                if rec.id in before and rec.kind == "semantic":
+                    res = next((t[4:] for t in rec.tags if t.startswith("res:")), None)
+                    loc = next((t[4:] for t in rec.tags if t.startswith("loc:")), None)
+                    if res and loc:
+                        agent.beliefs.refute(res, loc)
             if agent.alive:
                 identity.refresh(agent)
         self._observed_today.clear()

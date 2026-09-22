@@ -147,12 +147,16 @@ if view == VIEWS[1]:
     tags = ", ".join(final.identity.self_description_tags) or "sin rasgos destacados aún"
     death_txt = f" · murió el día {int(meta['death_tick']) // data.ticks_per_day} ({meta['death_reason']})" if pd.notna(meta["death_tick"]) else ""
     st.caption(f"Identidad observada: **{tags}** · etapa final: {final.life_stage}{death_txt}")
-    m1, m2, m3, m4, m5 = st.columns(5)
+    m1, m2, m3, m4, m5, m6, m7 = st.columns(7)
     m1.metric("Edad (días)", final.age_days(data.ticks_per_day), delta=final.age_days(data.ticks_per_day) - initial.age_days(data.ticks_per_day))
     m2.metric("Dinero", f"{final.money:.2f}", delta=f"{final.money - initial.money:+.2f}")
     m3.metric("Reputación", f"{final.reputation:.2f}")
     m4.metric("Honestidad (valor)", f"{final.identity.core_values.get('honesty', 0.5):.2f}")
     m5.metric("Memorias", len(data.memories[data.memories["agent_id"] == agent_id]))
+    sm = getattr(final, "self_model", None)
+    if sm is not None and sm.n:
+        m6.metric("Calibración automodelo", f"{sm.calibration():.2f}", help="1 − error medio al predecir el éxito de sus propias acciones")
+        m7.metric("Ventaja vs. modelo externo", f"{sm.advantage():+.3f}", help="error del modelo poblacional − error propio; positivo = se predice mejor a sí mismo")
 
     show(charts.needs_lines(smoothed_agent_needs(ev, data.ticks_per_day), data, f"Necesidades de {final.name} (media móvil de un día)"))
 

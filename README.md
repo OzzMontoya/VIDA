@@ -4,7 +4,7 @@
 
 Plataforma experimental de simulación multiagente para estudiar cómo la memoria, la experiencia, el aprendizaje, las relaciones sociales y el entorno forman, modifican y preservan una identidad individual. Proyecto de investigación de Oziel Atlahi Montoya Mares (UTMA). El documento de diseño completo está en `Proyecto_VIDA_Documento_Completo_v2_1.pdf`.
 
-Estado: **VIDA-0.1, núcleo jugable.** 10 agentes viven 30 días simulados en un pueblo textual de 12 lugares: trabajan, compran, comen, descansan, estudian, conversan, piden y comparten información (a veces falsa), y cada uno acumula memoria episódica, semántica, social, autobiográfica y procedimental. Las decisiones son por reglas deterministas con semilla, o bien con un modelo de lenguaje (Claude) para todos o algunos agentes. Incluye experimentos configurables (memoria, entorno, engaño y transferencia entre soportes) con métricas científicas y el Índice de Continuidad Individual. VIDA-0.1 está completo en alcance; sigue VIDA-0.2.
+Estado: **VIDA-0.2 en desarrollo** (sobre el núcleo jugable de 0.1). 10 agentes viven 30 días simulados en un pueblo textual de 12 lugares: trabajan, compran, comen, descansan, estudian, conversan, piden y comparten información (a veces falsa), y cada uno acumula memoria episódica, semántica, social, autobiográfica y procedimental. Las decisiones son por reglas deterministas con semilla, o bien con un modelo de lenguaje (Claude) para todos o algunos agentes. Incluye experimentos configurables (memoria, entorno, engaño y transferencia entre soportes) con métricas científicas y el Índice de Continuidad Individual. VIDA-0.2 añade memoria reflexiva (conclusiones derivadas de varias experiencias), acoplamiento fuerte entre lo vivido y lo que se decide, un automodelo predictivo con métricas de calibración y ventaja frente a un modelo externo, creencias que se debilitan al olvidar, y escala a 100 agentes (`world.n_homes`).
 
 Qué puede responder hoy el sistema sobre cualquier agente (criterio de éxito de 0.1): qué vivió, qué recuerda, qué aprendió, qué prefiere, a quién conoce, qué decisiones tomó y qué experiencias lo modificaron. Ver `python -m vida life`.
 
@@ -69,6 +69,10 @@ python -m vida experiment transfer    --seeds 1,2,3 --split 240 --horizon 120 --
 Cada experimento corre sus variantes con cada semilla, calcula las métricas de la sección 30 por agente (memoria, consistencia conductual, estabilidad de preferencias, confianza, engaño, aprendizaje, entropía de decisiones, supervivencia) y guarda `results.json`, `summary.json` y `manifest.json` en `data/experiments/<nombre>/<fecha>/`.
 
 El experimento de **transferencia** simula una vida hasta un tick de corte, clona el mundo entero y en cada clon sustituye la mente del agente estudiado según la condición (completa, sólo memoria, sólo conocimientos, sólo personalidad, parcial, memoria borrada al 50 %, ninguna) conservando el cuerpo. Todos los clones viven el mismo horizonte con los mismos flujos aleatorios. El **Índice de Continuidad Individual** (`evaluation/metrics.py`) compara cada clon con la continuación sin intervención y con el agente previo al corte en ocho dimensiones: memoria, preferencias, personalidad, conocimientos, relaciones, decisiones, autobiografía y autorrepresentación. Es una semejanza entre estados; no mide conciencia.
+
+### Automodelo predictivo (VIDA-0.2)
+
+Antes de cada acción el agente predice, con su propia memoria, la probabilidad de éxito; el mundo resuelve y se registra el error junto con el de un modelo externo (tasa de éxito poblacional). Métricas por agente: `self_model_calibration` (1 − error medio) y `self_model_advantage` (error externo − error propio; positivo si el agente se predice mejor que un observador con la información de toda la población). Es el primer instrumento del criterio 1 de `docs/criterios_consciencia.md`. El error reciente amplía la exploración del agente (metacognición mínima, medible).
 
 ## Objetivos de investigación
 

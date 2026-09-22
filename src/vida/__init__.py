@@ -8,4 +8,4 @@ la autoridad sobre el mundo. Los agentes pueden tener creencias incorrectas. El
 motor de decisión propone acciones; sólo el mundo resuelve sus consecuencias.
 """
 
-__version__ = "0.1.0a0"
+__version__ = "0.2.0a0"

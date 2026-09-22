@@ -17,8 +17,8 @@ from pydantic import BaseModel, Field
 
 from vida.simulation.config import MemorySection
 
-MemoryKind = Literal["episodic", "semantic", "social", "autobiographical", "procedural"]
-MEMORY_KINDS: tuple[MemoryKind, ...] = ("episodic", "semantic", "social", "autobiographical", "procedural")
+MemoryKind = Literal["episodic", "semantic", "social", "autobiographical", "procedural", "reflective"]
+MEMORY_KINDS: tuple[MemoryKind, ...] = ("episodic", "semantic", "social", "autobiographical", "procedural", "reflective")
 
 
 class MemoryRecord(BaseModel):

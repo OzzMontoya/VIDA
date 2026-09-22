@@ -29,7 +29,7 @@ ACTION_GROUP_ORDER = ["descanso", "trabajo", "compra", "comida", "conversación"
 NEED_ORDER = ["hunger", "energy", "health", "social", "safety", "knowledge"]
 NEED_LABELS = {"hunger": "hambre", "energy": "energía", "health": "salud", "social": "social", "safety": "seguridad", "knowledge": "conocimiento"}
 LOCATION_TYPE_LABELS = {"home": "casa", "plaza": "plaza", "market": "mercado", "school": "escuela", "hospital": "hospital", "workplace": "trabajo"}
-MEMORY_KIND_LABELS = {"episodic": "episódica", "semantic": "semántica", "social": "social", "autobiographical": "autobiográfica", "procedural": "procedimental"}
+MEMORY_KIND_LABELS = {"episodic": "episódica", "semantic": "semántica", "social": "social", "autobiographical": "autobiográfica", "procedural": "procedimental", "reflective": "reflexiva"}
 
 
 @dataclass

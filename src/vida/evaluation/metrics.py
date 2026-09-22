@@ -79,6 +79,12 @@ def agent_metrics(agent: AgentState, memory: AgentMemory, events: list[EventReco
     m["memory_semantic_facts"] = sum(1 for r in records if r.kind == "semantic")
     m["memory_mean_importance"] = round(sum(r.importance for r in records) / len(records), 6) if records else 0.0
     m["memory_recall_rate"] = round(sum(1 for r in records if r.access_count > 0) / len(records), 6) if records else 0.0
+    m["memory_reflections"] = sum(1 for r in records if r.kind == "reflective")
+
+    # Automodelo predictivo (criterio 1 de docs/criterios_consciencia.md)
+    m["self_model_calibration"] = agent.self_model.calibration()
+    m["self_model_advantage"] = agent.self_model.advantage()
+    m["self_model_n"] = agent.self_model.n
 
     # Identidad y consistencia conductual
     half = len(actions) // 2

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vida"
-version = "0.1.0a0"
+version = "0.2.0a0"
 description = "VIDA: Vida Artificial, Identidad y Desarrollo de Agentes. Simulador multiagente reproducible."
 readme = "README.md"
 requires-python = ">=3.12"

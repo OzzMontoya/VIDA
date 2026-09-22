@@ -20,6 +20,7 @@ from vida.agents.beliefs import WorldModel
 from vida.agents.goals import Goal, Preference
 from vida.agents.needs import Need, clamp01
 from vida.agents.personality import Personality
+from vida.agents.selfmodel import SelfModelState
 from vida.simulation.config import NeedName
 from vida.world.actions import ActionOutcome
 
@@ -117,6 +118,7 @@ class AgentState(BaseModel):
     decision_history: list[str] = Field(default_factory=list)
     critical_streak: int = 0
     counters: dict[str, int] = Field(default_factory=dict)
+    self_model: SelfModelState = Field(default_factory=SelfModelState)
 
     # --- helpers de consulta ----------------------------------------------
     @property

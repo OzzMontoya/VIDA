@@ -46,6 +46,7 @@ class EventRecord(BaseModel):
     retrieved_memory_ids: list[str] = Field(default_factory=list)
     decision: DecisionRecord | None = None
     proposal: ActionProposal | None = None
+    prediction: dict[str, float] | None = None  # automodelo: p_success propia, baseline poblacional, actual
     outcome: ActionOutcome | None = None
     memories_created: list[str] = Field(default_factory=list)
     relationship_deltas: dict[str, dict[str, float]] = Field(default_factory=dict)

@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 from vida.agents.agent import AgentState
+from vida.agents.selfmodel import predict_success
 from vida.memory.base import AgentMemory, MemoryRecord
 from vida.simulation.config import DecisionSection
 from vida.simulation.events import DecisionRecord
@@ -76,12 +77,24 @@ class RuleBasedEngine:
 
     @staticmethod
     def _expectation(ctx: DecisionContext, tags: set[str]) -> float:
-        """Factor en [0.5, 1.5] según la valencia media de memorias recuperadas con esas etiquetas."""
-        matching = [m for m in ctx.memories if tags.issubset(m.tags)]
-        if not matching:
-            return 1.0
-        mean = sum(m.valence for m in matching) / len(matching)
-        return max(0.5, min(1.5, 1.0 + 0.5 * mean))
+        """Factor en [0.2, 1.8]: lo vivido pesa en lo que se elige.
+
+        Combina (a) la valencia de las memorias recuperadas con esas etiquetas,
+        (b) las conclusiones reflexivas del agente sobre esa acción (peso doble) y
+        (c) la tasa de éxito propia predicha por el automodelo. Sin memoria, el
+        factor es 1.0 y el agente decide sólo por necesidades y personalidad.
+        """
+        weighted = [(m.valence, 1.0) for m in ctx.memories if tags.issubset(m.tags)]
+        action_tags = {t for t in tags if t.startswith("action:")}
+        if action_tags:
+            weighted += [(r.valence, 2.0) for r in ctx.memory.find(tags, kind="reflective")]
+        factor = 1.0
+        if weighted:
+            mean = sum(v * w for v, w in weighted) / sum(w for _, w in weighted)
+            factor *= 1.0 + 0.6 * mean
+        if action_tags and ctx.memory.records:
+            factor *= 0.5 + predict_success(ctx.memory, tags)  # 0.5..1.5 según éxito propio previo
+        return max(0.2, min(1.8, factor))
 
     @staticmethod
     def _preference_bonus(agent: AgentState, subjects: list[str]) -> float:
@@ -238,7 +251,9 @@ class RuleBasedEngine:
         cands = self.candidates(ctx)
         ranked = sorted(cands.items(), key=lambda kv: (-kv[1][0], kv[0]))
         best_score = ranked[0][1][0]
-        top = [kv for kv in ranked if best_score - kv[1][0] <= self.epsilon]
+        # Metacognición mínima: si el automodelo falla últimamente, se explora más entre casi empates.
+        epsilon = self.epsilon + 0.2 * ctx.agent.self_model.recent_error()
+        top = [kv for kv in ranked if best_score - kv[1][0] <= epsilon]
         key, (score, proposal) = top[0] if len(top) == 1 else rng.choice(top)
         if proposal.kind == "share_info":
             proposal.payload.update(self.decide_share(ctx, proposal.target_agent or "", proposal.resource or "", rng))
