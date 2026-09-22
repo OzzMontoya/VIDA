@@ -160,6 +160,18 @@ Todos los agentes se colocan en la misma situación y deciden dos veces: con su 
 
 Observación: lo vivido duplica la diversidad de conducta cuando la situación deja margen y cambia la elección de cerca de la mitad de los agentes; cuando la situación aprieta, la necesidad manda y la historia casi no cuenta. La personalidad sola, sin historia, produce mucha menos variedad de la que muestran los agentes con vida. Es la primera cuantificación directa de la hipótesis general del documento (sección 8): experiencias acumuladas producen diferencias conductuales estables entre agentes inicialmente comparables.
 
+## 13. Experimento de entorno: abundancia, normal y escasez (15 días, 3 semillas, con nacimientos)
+
+| Variante | Supervivencia | Conversaciones intentadas | Intercambios de información | Confianza media | Nivel medio de necesidades | Tasa de engaño |
+|---|---|---|---|---|---|---|
+| abundancia (×2, sin escaseces) | 0.92 | 65 | 4.1 | 0.646 | 0.853 | 0.21 |
+| normal | 0.95 | — | — | 0.633 | 0.851 | 0.25 |
+| escasez (×0.4, escasez cada 4 días) | 0.55 | 39 | 11.0 | 0.615 | 0.779 | 0.26 |
+
+Tamaños de efecto escasez frente a abundancia: supervivencia d = −0.84, intentos de conversación −1.07, intercambios de información +0.99, confianza −0.85, memorias conservadas −0.97, importancia media de las memorias +0.90.
+
+Observación: la escasez mata a casi la mitad de la población, desplaza la vida social hacia la búsqueda de información, erosiona la confianza y deja memorias más escasas pero más importantes (más fracasos). El engaño sube poco y con mucha varianza: en el motor por reglas la mentira depende de la honestidad inicial y de la competencia por el recurso, y con pocos intercambios el estimador es ruidoso. La supervivencia en abundancia no es total (0.92) porque incluye a los hijos nacidos durante la corrida.
+
 ## 5. Lo que estos resultados dicen sobre los objetivos
 
 - **Objetivo 2 (identidad y continuidad)**: en este mundo, "quién es" el agente vive sobre todo en su memoria y sus relaciones; la personalidad fija pesa poco porque las reglas de decisión la usan débilmente. Un mundo con más opciones y menos rutina forzada haría más visibles las diferencias. Con generaciones (sección 10) aparece una segunda forma de continuidad, la transmisión a los hijos: medible, parcial y dominada por la experiencia propia del hijo.
