@@ -224,7 +224,8 @@ class RuleBasedEngine:
             for other in p.visible_agents:
                 rel = agent.relationships.get(other)
                 affection = rel.affection if rel else 0.5
-                score = (u("social") + 0.05) * (0.5 + P.extraversion) * (0.7 + 0.6 * affection)
+                standing = p.visible_reputations.get(other, 0.5)  # reputación pública: se prefiere a quien la tiene buena
+                score = (u("social") + 0.05) * (0.5 + P.extraversion) * (0.7 + 0.6 * affection) * (0.7 + 0.6 * standing)
                 add(score, ActionProposal(kind="socialize", target_agent=other),
                     [f"agent:{other}"], {"action:socialize", f"agent:{other}"})
         if "ask_info" in ctx.available_actions and u("hunger") > 0.15 and self._food_in_inventory(agent) == 0:
@@ -236,7 +237,8 @@ class RuleBasedEngine:
                     for other in p.visible_agents:
                         if self._recently_unanswered(ctx, other):
                             continue
-                        add(u("hunger") * 0.6, ActionProposal(kind="ask_info", target_agent=other, resource=food),
+                        standing = p.visible_reputations.get(other, 0.5)
+                        add(u("hunger") * 0.6 * (0.6 + 0.8 * standing), ActionProposal(kind="ask_info", target_agent=other, resource=food),
                             [f"agent:{other}"], {"action:ask_info", f"agent:{other}"})
         if "share_info" in ctx.available_actions:
             for other in p.visible_agents:

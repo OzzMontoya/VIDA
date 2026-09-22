@@ -242,6 +242,7 @@ def _ask_info(world, agent, proposal, ctx, perception, base) -> ActionOutcome:
         details={
             "responded": True, "claimed_location": reply.claimed_location,
             "claimed_confidence": reply.claimed_confidence, "informant": other_id,
+            "informant_reputation": perception.visible_reputations.get(other_id, 0.5),
             "_world": {"intent": reply.kind, "was_true": was_true},
         },
     )

@@ -57,7 +57,8 @@ def learn(agent: AgentState, outcome: ActionOutcome, event_id: str) -> tuple[dic
         informant = details.get("informant")
         if claimed and informant:
             honesty = agent.beliefs.model_of(informant).honesty_estimate
-            confidence = round(min(0.95, 0.4 + 0.5 * honesty) * float(details.get("claimed_confidence", 1.0)), 6)
+            standing = float(details.get("informant_reputation", 0.5))
+            confidence = round(min(0.95, 0.3 + 0.4 * honesty + 0.2 * standing) * float(details.get("claimed_confidence", 1.0)), 6)
             agent.beliefs.told(outcome.resource, claimed, by=informant, event_id=event_id,
                                tick=outcome.tick, confidence=confidence)
             belief_changes.append(f"told:{outcome.resource}@{claimed} by {informant}")

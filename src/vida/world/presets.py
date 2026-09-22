@@ -44,6 +44,8 @@ def village_small(cfg: RunConfig) -> WorldState:
     ]
     locations = {loc.id: loc for loc in homes + public}
     factor = cfg.world.restock_factor
+    if cfg.world.scale_restock_with_population:
+        factor *= max(1.0, cfg.agents.n_agents / 10.0)
     for loc in locations.values():
         loc.restock = {r: max(0, int(round(v * factor))) for r, v in loc.restock.items()}
         loc.resources = {r: max(0, int(round(v * factor))) for r, v in loc.resources.items()}
@@ -53,9 +55,10 @@ def village_small(cfg: RunConfig) -> WorldState:
         payload = {"bread": 3} if i % 2 == 0 else {"bread": 0, "fruit": 5}
         scheduled.append(WorldEvent(tick=day * days + 6, kind="shortage", location_id="market", payload=payload))
     return WorldState(
-        locations=locations,
-        scheduled_events=scheduled,
+        locations=locations, scheduled_events=scheduled,
         economy={"price:bread": 2.0, "price:fruit": 1.0, "price:care": 5.0, "wage": 3.0},
+        dynamic_prices=cfg.world.dynamic_prices, price_elasticity=cfg.world.price_elasticity,
+        public_reputation=cfg.world.public_reputation,
     )
 
 
@@ -117,6 +120,8 @@ def town(cfg: RunConfig) -> WorldState:
     ]
     locations = {loc.id: loc for loc in homes + public}
     factor = cfg.world.restock_factor
+    if cfg.world.scale_restock_with_population:
+        factor *= max(1.0, cfg.agents.n_agents / 10.0)
     for loc in locations.values():
         loc.restock = {r: max(0, int(round(v * factor))) for r, v in loc.restock.items()}
         loc.resources = {r: max(0, int(round(v * factor))) for r, v in loc.resources.items()}
@@ -128,6 +133,8 @@ def town(cfg: RunConfig) -> WorldState:
     return WorldState(
         locations=locations, scheduled_events=scheduled,
         economy={"price:bread": 2.0, "price:fruit": 1.0, "price:care": 5.0, "wage": 3.0},
+        dynamic_prices=cfg.world.dynamic_prices, price_elasticity=cfg.world.price_elasticity,
+        public_reputation=cfg.world.public_reputation,
     )
 
 

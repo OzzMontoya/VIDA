@@ -36,6 +36,9 @@ class WorldEvent(BaseModel):
 class WorldState(BaseModel):
     tick: int = 0
     locations: dict[str, Location]
+    dynamic_prices: bool = False
+    price_elasticity: float = 0.8
+    public_reputation: bool = False
     agent_locations: dict[str, str] = Field(default_factory=dict)
     scheduled_events: list[WorldEvent] = Field(default_factory=list)
     economy: dict[str, float] = Field(default_factory=dict)  # "price:bread", "wage"
@@ -60,13 +63,24 @@ class World:
     def agents_at(self, location_id: str) -> list[str]:
         return sorted(a for a, loc in self.state.agent_locations.items() if loc == location_id)
 
-    def price(self, resource: str, location_id: str | None = None) -> float:
-        """Precio del recurso en un lugar (los lugares pueden sobrescribir la economía global)."""
+    def base_price(self, resource: str, location_id: str | None = None) -> float:
         if location_id is not None:
             loc = self.locations.get(location_id)
             if loc is not None and resource in loc.prices:
                 return float(loc.prices[resource])
         return float(self.state.economy.get(f"price:{resource}", 0.0))
+
+    def price(self, resource: str, location_id: str | None = None) -> float:
+        """Precio del recurso en un lugar. Con precios dinámicos, escasez local encarece y exceso abarata."""
+        base = self.base_price(resource, location_id)
+        if not self.state.dynamic_prices or location_id is None or base <= 0:
+            return base
+        loc = self.locations.get(location_id)
+        if loc is None or loc.restock.get(resource, 0) <= 0:
+            return base
+        fill = loc.stock(resource) / loc.restock[resource]
+        factor = max(0.6, min(2.0, 1.0 + self.state.price_elasticity * (1.0 - fill)))  # lleno = precio base
+        return round(base * factor, 4)
 
     def wage(self, location_id: str | None = None) -> float:
         if location_id is not None:
@@ -126,10 +140,11 @@ class World:
         ]
         resources = {r: s for r, s in sorted(loc.resources.items())}
         prices = {r: self.price(r, loc_id) for r in resources if self.price(r, loc_id) > 0}
+        reputations = {o: round(agents[o].reputation, 3) for o in visible} if self.state.public_reputation else {}
         return PerceptionSnapshot(
             tick=tick, hour=hour, location_id=loc_id, location_type=loc.type,
             is_open=loc.is_open(hour), visible_agents=visible,
-            visible_resources=resources, prices=prices,
+            visible_resources=resources, prices=prices, visible_reputations=reputations,
         )
 
     def legal_actions(self, agent: AgentState, perception: PerceptionSnapshot) -> list[ActionKind]:

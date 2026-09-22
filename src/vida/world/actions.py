@@ -41,6 +41,7 @@ class PerceptionSnapshot(BaseModel):
     visible_agents: list[str] = Field(default_factory=list)
     visible_resources: dict[str, int] = Field(default_factory=dict)
     prices: dict[str, float] = Field(default_factory=dict)
+    visible_reputations: dict[str, float] = Field(default_factory=dict)  # reputación pública de los presentes
     recent_public_events: list[str] = Field(default_factory=list)
 
 

@@ -30,6 +30,10 @@ class WorldSection(BaseModel):
     preset: str = "village_small"
     n_homes: int = 5  # casas del pueblo; los agentes se reparten entre ellas
     restock_factor: float = 1.0  # multiplica la reposición diaria (abundancia > 1, escasez < 1)
+    scale_restock_with_population: bool = True  # reposición × (n_agents / 10): el mundo crece con la población
+    dynamic_prices: bool = True  # el precio sube cuando queda poco stock y baja cuando sobra
+    price_elasticity: float = 0.8  # precio = base × (1 + e·(1 − stock/reposición)), acotado en [0.6, 2.0]
+    public_reputation: bool = True  # los agentes ven la reputación de quienes tienen delante
     shortage_days: list[int] = Field(default_factory=lambda: [10, 20])  # días con escasez programada en el mercado
 
 

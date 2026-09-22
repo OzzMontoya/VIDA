@@ -33,6 +33,8 @@ from vida.simulation.events import EventRecord
 from vida.world.presets import COMMON_KNOWLEDGE
 
 CONDITIONS = ["completa", "solo_memoria", "solo_conocimientos", "solo_personalidad", "parcial", "memoria_borrada_50", "ninguna"]
+# Ablaciones (fase 4): quitar un solo componente y medir cuánta continuidad se pierde.
+ABLATIONS = ["sin_relaciones", "sin_preferencias", "sin_automodelo", "sin_identidad", "sin_creencias"]
 KEY_METRICS = ["ici_vs_referencia", "ici_vs_previo", "memory", "preferences", "relationships", "decisions", "self_representation"]
 
 
@@ -75,6 +77,20 @@ def apply_transfer(engine: SimulationEngine, agent_id: str, condition: str, rng:
         ids = sorted(src_memory.records)
         for rid in rng.sample(ids, k=len(ids) // 2):
             src_memory.forgotten.append(src_memory.records.pop(rid))
+        return
+    if condition in ABLATIONS:
+        if condition == "sin_relaciones":
+            src.relationships = {}
+            src.beliefs.others = {}
+        elif condition == "sin_preferencias":
+            src.preferences = {}
+        elif condition == "sin_automodelo":
+            src.self_model = SelfModelState()
+        elif condition == "sin_identidad":
+            src.identity = Identity()
+            src.counters = {k: v for k, v in src.counters.items() if k.startswith("visit:")}
+        elif condition == "sin_creencias":
+            src.beliefs = _fresh_beliefs(src, locations)
         return
     new = fresh_mind(src, locations, rng)
     new_memory = AgentMemory(agent_id, engine.cfg.memory)
