@@ -22,12 +22,12 @@ from vida import __version__
 from vida.agents import identity, learning, social
 from vida.agents.agent import AgentState
 from vida.agents.decision import DecisionContext, DecisionEngine, build_engine
-from vida.agents.selfmodel import PopulationModel, context_levels
+from vida.agents.selfmodel import PopulationModel, context_levels, own_context_levels
 from vida.database.repository import RunRepository
 from vida.memory import autobiographical, episodic, procedural, reflective, semantic
 from vida.memory import social as social_memory
 from vida.memory.base import AgentMemory
-from vida.simulation import lifecycle
+from vida.simulation import generations, lifecycle
 from vida.simulation.clock import SimClock
 from vida.simulation.config import RunConfig, canonical_json, config_hash
 from vida.simulation.events import EventRecord, events_digest, make_event_id
@@ -52,6 +52,8 @@ class RunSummary(BaseModel):
     deaths: dict[str, str] = Field(default_factory=dict)
     alive: list[str] = Field(default_factory=list)
     decision_engine: str = "rules_v1"
+    births: int = 0
+    max_generation: int = 0
     llm_stats: dict[str, float] | None = None
     llm_cost_usd: float | None = None
 
@@ -90,6 +92,7 @@ class SimulationEngine:
         self.names = {aid: a.name for aid, a in self.agents.items()}
         self.events: list[EventRecord] = []
         self.deaths: dict[str, str] = {}
+        self.births: list[str] = []
         self._seq = 0
         self._day_outcomes: dict[str, list[ActionOutcome]] = {aid: [] for aid in self.agents}
         self._observed_today: set[tuple[str, str, int]] = set()
@@ -165,10 +168,11 @@ class SimulationEngine:
 
         # Automodelo: el agente predice su propio éxito en contexto antes de actuar; el mundo decide después.
         target = proposal.resource or proposal.target_agent or proposal.target_location
-        levels = context_levels(proposal.kind, target, self.clock.hour, self.cfg.run.ticks_per_day,
-                                {n: agent.needs[n].level for n in agent.needs})
+        public_levels = context_levels(proposal.kind, target, self.clock.hour, self.cfg.run.ticks_per_day,
+                                       {n: agent.needs[n].level for n in agent.needs})
+        levels = own_context_levels(agent, proposal.kind, target, self.clock.hour, self.cfg.run.ticks_per_day)
         predicted = agent.self_model.predict(levels)
-        baseline = self.population_model.predict(levels)
+        baseline = self.population_model.predict(public_levels)
 
         event = self._next_event("action", agent.id, perception=perception, state_before=state_before,
                                  retrieved_memory_ids=[m.id for m in ctx.memories], decision=decision, proposal=proposal)
@@ -178,7 +182,7 @@ class SimulationEngine:
         own_err, base_err = agent.self_model.record(predicted, baseline, outcome.success,
                                                     window=self.cfg.run.ticks_per_day, matched=matched)
         agent.self_model.learn(levels, outcome.success)
-        self.population_model.update(levels, outcome.success)
+        self.population_model.update(public_levels, outcome.success)
         event.prediction = {"p_success": predicted, "baseline": baseline, "actual": 1.0 if outcome.success else 0.0,
                             "error": round(own_err, 6), "baseline_error": round(base_err, 6), "matched": 1.0 if matched else 0.0}
         for other_id, deltas in sorted(outcome.other_need_deltas.items()):
@@ -276,11 +280,46 @@ class SimulationEngine:
                 identity.refresh(agent)
         self._observed_today.clear()
 
+    def _maybe_birth(self) -> None:
+        """Al inicio de un día de revisión, si hay hueco, nace un hijo de un adulto vivo (sección 18)."""
+        lc = self.cfg.lifecycle
+        if not lc.births or self.clock.hour != 0 or self.clock.day == 0 or self.clock.day % lc.birth_check_days != 0:
+            return
+        cap = lc.population_cap or self.cfg.agents.n_agents
+        if len(self.alive_ids()) >= cap:
+            return
+        candidates = generations.eligible_parents(self.agents, lc.parent_min_money)
+        if not candidates:
+            return
+        rng = self.hub.sub("births")
+        parent = self.agents[rng.choice(candidates)]
+        child_id = generations.next_child_id(self.agents)
+        name = generations.child_name(self.agents, parent)
+        child = generations.make_child(self.cfg, self.world, parent, self.memories[parent.id], child_id, name,
+                                       self.clock.tick, rng)
+        self.agents[child_id] = child
+        self.memories[child_id] = AgentMemory(child_id, self.cfg.memory)
+        self.names[child_id] = name
+        self._day_outcomes[child_id] = []
+        self.world.place_agent(child_id, child.home_id)
+        self.births.append(child_id)
+        self.memories[child_id].add("autobiographical", self.clock.tick,
+                                    f"Día {self.clock.day}: nací en {child.home_id}, hijo de {parent.name}",
+                                    importance=0.9, valence=0.3, tags={"autobio:birth", f"agent:{parent.id}"})
+        self.memories[parent.id].add("autobiographical", self.clock.tick,
+                                     f"Día {self.clock.day}: nació mi hijo {name}", importance=0.9, valence=0.6,
+                                     tags={"autobio:birth", f"agent:{child_id}"})
+        if self.repo is not None:
+            self.repo.save_agents(self.run_id, {child_id: child})
+        self._emit(self._next_event("birth", child_id, state_after=child.summary(),
+                                    note=f"parent={parent.id};generation={child.generation}"))
+
     # --- API pública -------------------------------------------------------
     def step(self) -> list[EventRecord]:
         start = len(self.events)
         for delta in self.world.apply_scheduled_events(self.clock.tick):
             self._emit(self._next_event("world_event", "world", world_delta=delta, note=delta["kind"]))
+        self._maybe_birth()
         order = self.alive_ids()
         self.hub.sub("turn_order").shuffle(order)
         for aid in order:
@@ -305,6 +344,7 @@ class SimulationEngine:
             code_version=__version__, ticks=ticks, n_agents=len(self.agents), n_events=len(self.events),
             events_sha256=events_digest(self.events), deaths=dict(sorted(self.deaths.items())), alive=self.alive_ids(),
             decision_engine=getattr(self.decision_engine, "name", "unknown"),
+            births=len(self.births), max_generation=max((a.generation for a in self.agents.values()), default=0),
             llm_stats=dict(getattr(self.decision_engine, "stats", {})) or None,
             llm_cost_usd=self.decision_engine.estimated_cost_usd() if hasattr(self.decision_engine, "estimated_cost_usd") else None,
         )

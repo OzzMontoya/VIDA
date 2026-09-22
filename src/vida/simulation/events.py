@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 from vida.agents.agent import AgentStateSummary
 from vida.world.actions import ActionOutcome, ActionProposal, PerceptionSnapshot
 
-EventType = Literal["action", "death", "stage_change", "world_event"]
+EventType = Literal["action", "death", "stage_change", "world_event", "birth"]
 
 
 class DecisionRecord(BaseModel):

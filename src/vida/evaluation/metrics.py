@@ -133,6 +133,9 @@ def agent_metrics(agent: AgentState, memory: AgentMemory, events: list[EventReco
     m["success_rate"] = round(sum(1 for e in actions if e.outcome.success) / len(actions), 6) if actions else 0.0
     m["llm_fallback_rate"] = round(sum(1 for e in actions if e.decision and "/fallback" in e.decision.engine) / len(actions), 6) if actions else 0.0
 
+    # Linaje
+    m["generation"] = agent.generation
+
     # Supervivencia y bienestar
     m["alive"] = 1.0 if agent.alive else 0.0
     m["age_days"] = agent.age_days(ticks_per_day)

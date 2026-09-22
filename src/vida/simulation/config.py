@@ -64,6 +64,13 @@ class LifecycleSection(BaseModel):
     max_age_days: int = 85
     critical_ticks: int = 12
     old_age_health_factor: float = 3.0
+    # Generaciones (sección 18)
+    births: bool = True  # nacen hijos cuando la población viva está por debajo del tope
+    birth_check_days: int = 3  # cada cuántos días se revisa si hay hueco
+    birth_age_days: int = 12  # edad inicial del hijo (adolescencia por defecto)
+    inheritance: float = 0.5  # peso de la personalidad del progenitor en la del hijo
+    population_cap: int | None = None  # None = n_agents inicial
+    parent_min_money: float = 6.0
 
 
 class MemoryWeights(BaseModel):

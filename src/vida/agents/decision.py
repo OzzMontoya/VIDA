@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 from vida.agents.agent import AgentState
-from vida.agents.selfmodel import context_levels
+from vida.agents.selfmodel import own_context_levels
 from vida.memory.base import AgentMemory, MemoryRecord
 from vida.simulation.config import DecisionSection
 from vida.simulation.events import DecisionRecord
@@ -98,8 +98,7 @@ class RuleBasedEngine:
         if action_tags and agent.self_model.n >= 3:
             action = next(iter(action_tags)).split(":", 1)[1]
             target = next((t.split(":", 1)[1] for t in sorted(tags) if t.startswith(("res:", "agent:", "loc:"))), None)
-            needs = {n: agent.needs[n].level for n in agent.needs}
-            levels = context_levels(action, target, ctx.hour, ctx.ticks_per_day, needs)
+            levels = own_context_levels(agent, action, target, ctx.hour, ctx.ticks_per_day)
             factor *= min(1.0, 0.5 + agent.self_model.predict(levels))  # 0.5..1.0: sólo penaliza
         return max(0.3, min(1.4, factor))
 

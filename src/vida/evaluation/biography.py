@@ -33,6 +33,8 @@ class Biography(BaseModel):
     core_values: dict[str, float] = Field(default_factory=dict)
     reputation: float = 0.5
     final_money: float = 0.0
+    generation: int = 0
+    parent: str | None = None
     lived_days: list[str] = Field(default_factory=list)
     notable_events: list[str] = Field(default_factory=list)
     remembers: list[str] = Field(default_factory=list)
@@ -77,6 +79,7 @@ def build_biography(repo: RunRepository, run_id: str, agent_id: str, names: dict
         identity_tags=list(final.identity.self_description_tags),
         core_values={k: round(v, 3) for k, v in sorted(final.identity.core_values.items())},
         reputation=round(final.reputation, 3), final_money=round(final.money, 2),
+        generation=final.generation, parent=names.get(final.parent_id, final.parent_id) if final.parent_id else None,
         forgotten_count=repo.forgotten_count(run_id, agent_id),
     )
     bio.stages = [(0, first.life_stage)] + [(e.day, e.note) for e in events if e.event_type == "stage_change"]
@@ -177,6 +180,8 @@ def render(bio: Biography) -> str:
     L.append(f"=== {bio.name} ({bio.agent_id}) — corrida {bio.run_id} ===")
     stages = " → ".join(f"{s} (día {d})" for d, s in bio.stages)
     L.append(f"Edad: {bio.initial_age_days} → {bio.final_age_days} días. Etapas: {stages}.")
+    if bio.parent:
+        L.append(f"Generación {bio.generation}, hijo de {bio.parent}.")
     if bio.death:
         L.append(f"Murió el día {bio.death[0]} ({bio.death[1]}).")
     L.append(f"Identidad observada: {', '.join(bio.identity_tags) or 'sin rasgos destacados aún'}. "

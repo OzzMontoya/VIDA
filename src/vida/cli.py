@@ -81,6 +81,8 @@ def cmd_run(args: argparse.Namespace) -> int:
         print(f"Vivos: {', '.join(summary.alive) or 'ninguno'}")
         if summary.deaths:
             print("Muertes: " + ", ".join(f"{aid} ({reason})" for aid, reason in summary.deaths.items()))
+        if summary.births:
+            print(f"Nacimientos: {summary.births} · generación máxima: {summary.max_generation}")
         if summary.llm_stats:
             st = summary.llm_stats
             print(f"LLM: {int(st['calls'])} llamadas, {int(st['cache_hits'])} desde caché, {int(st['fallbacks'])} recurrieron a reglas, "

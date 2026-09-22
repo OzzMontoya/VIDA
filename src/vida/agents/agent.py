@@ -119,6 +119,9 @@ class AgentState(BaseModel):
     critical_streak: int = 0
     counters: dict[str, int] = Field(default_factory=dict)
     self_model: SelfModelState = Field(default_factory=SelfModelState)
+    parent_id: str | None = None
+    generation: int = 0
+    birth_tick: int = 0
 
     # --- helpers de consulta ----------------------------------------------
     @property

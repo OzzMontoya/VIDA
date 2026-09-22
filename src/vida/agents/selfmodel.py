@@ -21,9 +21,14 @@ interno; es un mecanismo cuantificable.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pydantic import BaseModel, Field
 
 from vida.memory.base import AgentMemory
+
+if TYPE_CHECKING:
+    from vida.agents.agent import AgentState
 
 PRIOR_SUCCESS = 0.7
 PRIOR_WEIGHT = 2.0
@@ -46,6 +51,26 @@ def context_levels(action: str, target: str | None, hour: int, ticks_per_day: in
         f"{action}|{tgt}",
         f"{action}",
     ]
+
+
+def own_context_levels(agent: "AgentState", action: str, target: str | None, hour: int, ticks_per_day: int) -> list[str]:
+    """Niveles del automodelo propio: conocimiento privado (relación, habilidad) delante del contexto público.
+
+    El observador externo (``PopulationModel``) sólo ve el contexto público; lo que
+    el agente sabe de sí mismo y de su relación con el otro es información
+    individual genuina.
+    """
+    needs = {n: agent.needs[n].level for n in agent.needs}
+    public = context_levels(action, target, hour, ticks_per_day, needs)
+    private: list[str] = []
+    if action == "socialize" and target:
+        rel = agent.relationships.get(target)
+        trust = _bucket(rel.trust if rel else 0.5)
+        affection = _bucket(rel.affection if rel else 0.5)
+        private.append(f"{action}|{target}|trust={trust}|aff={affection}|rep={_bucket(agent.reputation)}")
+    elif action == "work":
+        private.append(f"{action}|{target or '-'}|skill={_bucket(agent.knowledge_level('job'))}|e={_bucket(needs.get('energy', 1.0))}")
+    return private + public
 
 
 class ContextTable(BaseModel):
