@@ -142,7 +142,7 @@ def cmd_experiment(args: argparse.Namespace) -> int:
     import json as _json
     from datetime import datetime
 
-    from vida.experiments import VARIANT_EXPERIMENTS, transfer
+    from vida.experiments import VARIANT_EXPERIMENTS, decision, transfer
     from vida.experiments.runner import effect_sizes, render_effects, render_summary, run_experiment
 
     cfg = load_config(args.config)
@@ -162,6 +162,16 @@ def cmd_experiment(args: argparse.Namespace) -> int:
         result["path"] = str(target)
         print(f"Corte en tick {args.split}, horizonte {args.horizon} ticks, agente {args.agent}. "
               "ICI = semejanza entre estados (1 = idéntico); no mide conciencia.")
+    elif args.name == "decision":
+        result = decision.run_decision_experiment(cfg, seeds=seeds, ticks=args.ticks, progress=progress)
+        metrics = decision.KEY_METRICS
+        target = out_dir / "decision" / datetime.now().strftime("%Y%m%d_%H%M%S")
+        target.mkdir(parents=True, exist_ok=True)
+        (target / "results.json").write_text(_json.dumps(result["rows"], ensure_ascii=False, indent=1), encoding="utf-8")
+        (target / "summary.json").write_text(_json.dumps(result["summary"], ensure_ascii=False, indent=1), encoding="utf-8")
+        result["path"] = str(target)
+        print(f"Tras {args.ticks} ticks de vida, todos los agentes en la misma situación: con su historia y con la misma "
+              "personalidad sin historia. share_changed = fracción cuya elección cambia al quitar la historia.")
     else:
         variants, metrics = VARIANT_EXPERIMENTS[args.name]
         result = run_experiment(args.name, cfg, variants, seeds=seeds, ticks=args.ticks, out_dir=out_dir, progress=progress)
@@ -274,7 +284,7 @@ def build_parser() -> argparse.ArgumentParser:
     runs.set_defaults(func=cmd_runs)
 
     exp = sub.add_parser("experiment", help="ejecutar un experimento (memory, environment, deception, transfer)")
-    exp.add_argument("name", choices=["memory", "environment", "deception", "transfer"])
+    exp.add_argument("name", choices=["memory", "environment", "deception", "transfer", "decision"])
     exp.add_argument("--config", default="config/default.yaml")
     exp.add_argument("--seeds", default="1,2,3", help="semillas separadas por coma")
     exp.add_argument("--ticks", type=int, default=240, help="duración de cada corrida (experimentos de variantes)")

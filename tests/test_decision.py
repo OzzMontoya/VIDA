@@ -105,3 +105,20 @@ def test_reply_omits_when_nothing_is_believed(small_world, small_cfg):
     req = InfoRequest(asker_id="a02", responder_id="a01", resource="bread", tick=8)
     reply = RuleBasedEngine(small_cfg.decision).decide_reply(_ctx(world, agents, small_cfg, "a01"), req, random.Random(0))
     assert reply.kind == "omit" and reply.claimed_location is None
+
+
+def test_starving_and_broke_agent_works_instead_of_oscillating(small_world, small_cfg):
+    world, agents, hub = small_world
+    agent = agents["a01"]
+    _place(world, agents, "a01", "farm")
+    agent.needs["hunger"].level = 0.0
+    agent.money = 0.5  # no alcanza ni para fruta
+    agent.inventory = {}
+    for need in ("energy", "social", "knowledge", "health", "safety"):
+        agent.needs[need].level = 0.9
+    proposal, record = RuleBasedEngine(small_cfg.decision).decide(_ctx(world, agents, small_cfg, "a01", tick=10), hub.sub("d"))
+    assert proposal.kind == "work", record.scores
+    # Con dinero, en un lugar con comida a la vista, lo prioritario es comprar, no moverse.
+    agent.money = 5.0
+    proposal, _ = RuleBasedEngine(small_cfg.decision).decide(_ctx(world, agents, small_cfg, "a01", tick=10), hub.sub("d"))
+    assert proposal.kind == "acquire"

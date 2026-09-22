@@ -111,19 +111,34 @@ class RuleBasedEngine:
 
     @staticmethod
     def _survival_override(ctx: DecisionContext, cands: dict[str, tuple[float, ActionProposal]]) -> None:
-        """Una necesidad crítica domina: las acciones que la atienden se multiplican por 3."""
-        agent = ctx.agent
-        hungry = agent.needs["hunger"].level < 0.15 and sum(agent.inventory.get(f, 0) for f in FOOD_EFFECTS) == 0
-        food_places = {loc for loc, info in ctx.location_info.items() if info["type"] in {"market", "workplace"}}
+        """Una necesidad crítica domina: las acciones que la atienden se multiplican por 3.
+
+        Con hambre: comer o comprar si hay comida a la vista; trabajar si no hay
+        dinero; desplazarse sólo hacia un lugar que venda comida y sólo si aquí no
+        la hay (evita oscilar entre dos lugares sin actuar).
+        """
+        agent, p = ctx.agent, ctx.perception
+        held = sum(agent.inventory.get(f, 0) for f in FOOD_EFFECTS)
+        hungry = agent.needs["hunger"].level < 0.15
+        food_here = any(p.visible_resources.get(f, 0) > 0 for f in FOOD_EFFECTS)
+        cheapest = min((pr for f in FOOD_EFFECTS for pr in [p.prices.get(f, ctx.prices.get(f, 0.0))] if pr > 0), default=0.0)
+        broke = agent.money < cheapest if cheapest else False
+        food_places = {loc for loc, info in ctx.location_info.items()
+                       if any(r in FOOD_EFFECTS for r in (info.get("prices") or {}))}
         for key, (score, prop) in list(cands.items()):
             boost = 1.0
-            if agent.needs["hunger"].level < 0.15 and prop.kind in {"consume", "acquire"}:
+            if hungry and prop.kind == "consume":
                 boost = 3.0
-            elif hungry and prop.kind == "move" and prop.target_location in food_places:
+            elif hungry and prop.kind == "acquire" and not broke:
+                boost = 3.0
+            elif hungry and prop.kind == "work" and (broke or held == 0):
+                boost = 3.0
+            elif hungry and held == 0 and prop.kind == "move" and prop.target_location in food_places                     and not food_here and not broke:
                 boost = 3.0
             elif agent.needs["energy"].level < 0.15 and prop.kind == "rest":
                 boost = 3.0
-            elif agent.needs["health"].level < 0.15 and (prop.kind == "seek_care" or (prop.kind == "move" and ctx.location_info.get(prop.target_location or "", {}).get("type") == "hospital")):
+            elif agent.needs["health"].level < 0.15 and (prop.kind == "seek_care" or (
+                    prop.kind == "move" and ctx.location_info.get(prop.target_location or "", {}).get("type") == "hospital")):
                 boost = 3.0
             if boost != 1.0:
                 cands[key] = (round(score * boost + 0.05, 6), prop)

@@ -85,3 +85,28 @@ def test_effect_sizes_rank_metrics_by_difference():
     assert eff[0]["d"] < -1.5 and eff[1]["d"] == 0.0
     assert "x" in render_effects(eff, "a", "b")
     assert effect_sizes(rows, "a", "zzz") == []
+
+
+def test_decision_experiment_measures_history_effect(small_cfg):
+    from vida.experiments.decision import SCENARIOS, run_decision
+
+    cfg = small_cfg.model_copy(deep=True)
+    cfg.agents.n_agents = 4
+    rows = run_decision(cfg, seed=2, ticks=72)
+    assert {r["variant"] for r in rows} == set(SCENARIOS)
+    for r in rows:
+        assert r["n_agents"] == 4 and 0.0 <= r["share_changed"] <= 1.0
+        assert set(r["choices_history"]) == set(r["choices_blank"])
+        assert r["distinct_history"] >= 1 and r["entropy_history"] >= 0.0
+    # Con historia, en algún escenario alguien decide distinto de su versión sin historia.
+    assert any(r["share_changed"] > 0 for r in rows)
+
+
+def test_runner_handles_agents_born_during_the_run(cfg):
+    from vida.experiments.runner import run_variant
+
+    c = cfg.model_copy(deep=True)
+    c.agents.n_agents = 3
+    c.lifecycle.birth_check_days = 1
+    engine, rows = run_variant(c, seed=4, ticks=72, run_id="born")
+    assert engine.births and any(r["agent_id"] in engine.births for r in rows)

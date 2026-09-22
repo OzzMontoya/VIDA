@@ -8,13 +8,13 @@ El experimento de transferencia tiene su propio flujo (clonación del mundo).
 
 from __future__ import annotations
 
-from vida.experiments import deception, environment, memory, transfer
+from vida.experiments import deception, decision, environment, memory, transfer
 
 VARIANT_EXPERIMENTS = {
     "memory": (memory.VARIANTS, memory.KEY_METRICS),
     "environment": (environment.VARIANTS, environment.KEY_METRICS),
     "deception": (deception.VARIANTS, deception.KEY_METRICS),
 }
-EXPERIMENT_NAMES = sorted(VARIANT_EXPERIMENTS) + ["transfer"]
+EXPERIMENT_NAMES = sorted(VARIANT_EXPERIMENTS) + ["transfer", "decision"]
 
-__all__ = ["VARIANT_EXPERIMENTS", "EXPERIMENT_NAMES", "transfer"]
+__all__ = ["VARIANT_EXPERIMENTS", "EXPERIMENT_NAMES", "transfer", "decision"]

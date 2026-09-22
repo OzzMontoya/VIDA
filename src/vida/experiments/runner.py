@@ -39,7 +39,7 @@ def run_variant(cfg: RunConfig, seed: int, ticks: int, run_id: str) -> tuple[Sim
     engine.run(ticks=ticks)
     rows = []
     for aid in sorted(engine.agents):
-        metrics = agent_metrics(engine.agents[aid], engine.memories[aid], engine.events, initial[aid], c.run.ticks_per_day)
+        metrics = agent_metrics(engine.agents[aid], engine.memories[aid], engine.events, initial.get(aid), c.run.ticks_per_day)
         rows.append({"agent_id": aid, **metrics})
     return engine, rows
 
