@@ -62,8 +62,33 @@ Observaciones:
 - La autorrepresentación es la dimensión más frágil (≈0.5 en todas las transferencias parciales) y la más ruidosa (sd hasta 0.14): las etiquetas de identidad se recalculan a diario a partir de contadores que la mente nueva empieza de cero.
 - Frente al agente previo al corte, incluso la continuación sin intervención cae a 0.834: cinco días de vida cambian al agente casi tanto como una transferencia parcial. Cualquier medida de continuidad debe compararse con esa deriva natural, no con la identidad perfecta.
 
+## 6. Automodelo en contexto y ventaja emparejada (30 días, dos mundos)
+
+Se sustituyó la tasa de éxito simple por una tabla de contexto (acción, objetivo, franja del día, hambre, energía) con retroceso jerárquico, y se dio al modelo externo la misma tabla con datos de toda la población. Además se añadió la **ventaja emparejada**: sólo en las predicciones donde el agente ya tenía evidencia suficiente en el contexto más específico, para descontar la ventaja que el modelo poblacional obtiene por ver diez veces más datos.
+
+| Mundo | Calibración media | Ventaja | Ventaja emparejada | Agentes con ventaja > 0 |
+|---|---|---|---|---|
+| village_small | 0.856 | −0.029 | −0.031 | 0 de 10 |
+| town | 0.850 | −0.026 | −0.032 | 0 de 10 |
+
+Observación: incluso en igualdad de especificidad, la historia individual no aporta información predictiva por encima de la población. Interpretación: en el motor por reglas, el éxito de una acción depende del mundo (stock, horarios, aceptación ajena) y apenas de rasgos individuales; por tanto no hay información "propia" que un automodelo pueda capturar. El criterio 1 sigue sin cumplirse, y ahora sabemos que no es por falta de contexto en el modelo, sino porque el mundo no diferencia a los individuos en sus resultados. Para que el automodelo tenga algo propio que aprender, las consecuencias deben depender de la persona: habilidad, reputación y relaciones tienen que cambiar la probabilidad de éxito.
+
+## 7. Transferencia en el pueblo grande (`town`, 3 semillas)
+
+| Condición | ICI vs referencia (town) | ICI vs referencia (village_small) | decisiones (town) |
+|---|---|---|---|
+| completa | 1.000 | 1.000 | 1.000 |
+| memoria borrada 50 % | 0.772 | 0.787 | 0.843 |
+| parcial | 0.737 | 0.746 | 0.811 |
+| sólo memoria | 0.688 | 0.691 | 0.808 |
+| sólo conocimientos | 0.574 | 0.608 | 0.766 |
+| sólo personalidad | 0.574 | 0.598 | 0.813 |
+| ninguna | 0.537 | 0.578 | 0.754 |
+
+Observación: con alternativas reales (dos mercados, tres trabajos), una mente nueva en el mismo cuerpo se aleja más de la original (0.537 frente a 0.578) y la dimensión de decisiones discrimina más (0.75-0.84). El orden de las condiciones se mantiene en los dos mundos, lo que sugiere que el instrumento es estable. La deriva natural en cinco días sigue en 0.834.
+
 ## 5. Lo que estos resultados dicen sobre los objetivos
 
 - **Objetivo 2 (identidad y continuidad)**: en este mundo, "quién es" el agente vive sobre todo en su memoria y sus relaciones; la personalidad fija pesa poco porque las reglas de decisión la usan débilmente. Un mundo con más opciones y menos rutina forzada haría más visibles las diferencias.
 - **Objetivo 3 (cambio de soporte)**: el experimento de transferencia ya es reproducible y ordena las condiciones de forma estable. Es el instrumento; los números aún describen un mundo pequeño.
-- **Objetivo 1 (consciencia)**: el primer criterio operativo (automodelo con ventaja predictiva) se midió y salió negativo. Es el resultado correcto para esta etapa y marca el siguiente paso: un automodelo que aprenda de más que la tasa de éxito (contexto, necesidades, hora).
+- **Objetivo 1 (consciencia)**: el primer criterio operativo (automodelo con ventaja predictiva) se midió con y sin contexto, y con comparación emparejada: negativo en todos los casos. La causa identificada no está en el automodelo sino en el mundo: los resultados no dependen del individuo. Siguiente paso: consecuencias dependientes de habilidad, reputación y relaciones, y repetir la medición.
