@@ -115,6 +115,21 @@ Observaciones:
 - Interpretación: el criterio 1 se cumple **de forma estrecha y localizada**: existe información individual predictiva exactamente donde el mundo la genera (relaciones), y en ningún otro sitio. No es evidencia de autorrepresentación; es la demostración de que el instrumento detecta señal individual cuando la hay.
 - Métrica nueva por agente: `self_model_advantage_social` (ventaja emparejada restringida a conversar).
 
+## 9. VIDA-1.0: vidas completas (120 días, `town`)
+
+Primera corrida larga: los 10 agentes mueren de vejez entre los días 45 y 65 (14.016 eventos). Con el automodelo de conocimiento privado (confianza y afecto propios hacia el otro; habilidad propia):
+
+| Intentos propios | n | ventaja |
+|---|---|---|
+| 3-5 | 2229 | −0.052 |
+| 11-20 | 2376 | −0.016 |
+| 21-50 | 2229 | +0.000 |
+| 51+ | 955 | −0.001 |
+
+Por acción (≥6 intentos propios): conversar +0.012, trabajar +0.012, estudiar +0.006; el resto negativo.
+
+Observación: con mucha experiencia la ventaja converge a cero, no a un valor positivo; la información individual sigue concentrada en conversar y trabajar, las dos acciones cuyo resultado depende del agente. Esa primera corrida no tuvo nacimientos: todos envejecieron a la vez y cuando hubo hueco no quedaban adultos jóvenes. Se cambió el tope de población a n+2 para que nazcan hijos mientras hay progenitores elegibles (resultados de linaje en la sección 10).
+
 ## 5. Lo que estos resultados dicen sobre los objetivos
 
 - **Objetivo 2 (identidad y continuidad)**: en este mundo, "quién es" el agente vive sobre todo en su memoria y sus relaciones; la personalidad fija pesa poco porque las reglas de decisión la usan débilmente. Un mundo con más opciones y menos rutina forzada haría más visibles las diferencias.
