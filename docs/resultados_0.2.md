@@ -203,7 +203,16 @@ La primera ejecución de este experimento dio cero mentiras descubiertas: el eng
 
 Tamaños de efecto deshonestos frente a honestos: tasa de engaño d = +1.31, mentiras descubiertas +1.23, reputación −0.72, confianza −0.71, aceptación social −0.41, dinero −0.41.
 
-Observaciones: el engaño se descubre por sus consecuencias y erosiona reputación, confianza y aceptación; con escasez las mentiras se descubren el doble porque hay más intercambios de información y más comprobaciones fallidas, y la confianza cae a 0.54. Es el experimento de la sección 20 tal como lo pedía el documento: la relación cambia por el resultado real de la interacción, no por palabras. Lo que no aparece aún: cambio de estrategia del mentiroso tras ser descubierto (el motor por reglas no reacciona a la caída de reputación al decidir si mentir); es el siguiente ajuste natural.
+Observaciones: el engaño se descubre por sus consecuencias y erosiona reputación, confianza y aceptación; con escasez las mentiras se descubren el doble porque hay más intercambios de información y más comprobaciones fallidas, y la confianza cae a 0.54. Es el experimento de la sección 20 tal como lo pedía el documento: la relación cambia por el resultado real de la interacción, no por palabras. Después se añadió el cambio de estrategia: un agente que ya ha mentido y tiene la reputación dañada multiplica su probabilidad de volver a mentir por 0.4 + 0.6·reputación. Repetido el experimento:
+
+| Variante | Tasa de engaño | Primera mitad | Segunda mitad | Mentiras descubiertas |
+|---|---|---|---|---|
+| honestos | 0.045 | 0.026 | 0.052 | 0.36 |
+| neutros | 0.219 | 0.202 | 0.224 | 0.97 |
+| deshonestos | 0.385 | 0.378 | 0.371 | 1.89 |
+| deshonestos con escasez | 0.284 | 0.279 | 0.265 | 6.00 |
+
+Observación: el disuasor baja el nivel general de engaño (deshonestos 0.48 → 0.39; con escasez 0.47 → 0.28, donde más se descubre), pero en 15 días no se ve una caída dentro de la vida de cada agente: la diferencia entre mitades es menor que la desviación entre semillas. Medir el cambio de estrategia individual exige vidas más largas y más intercambios; queda como hipótesis a comprobar en VIDA-2.0, no como resultado.
 
 ## 5. Lo que estos resultados dicen sobre los objetivos
 
