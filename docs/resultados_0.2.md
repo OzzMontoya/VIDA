@@ -144,9 +144,27 @@ Observaciones:
 - La primera versión sin soporte familiar produjo 14 nacimientos y 14 muertes infantiles por hambre: nacer en adolescencia sin poder trabajar no es viable sin familia. La asignación diaria redujo la mortalidad infantil a 6 de 19, y de esas, 4 eran huérfanos cuyo progenitor murió antes de que pudieran trabajar. Se añadió el tutor (el adulto con más afecto por el hijo asume la asignación); resultados en la sección 11.
 - Automodelo con vidas largas (`town`, 26.000 predicciones): la ventaja converge a 0.000 con más de 20 intentos propios y sigue siendo positiva sólo en conversar (+0.022, n = 4077). Confirmación con diez veces más datos del hallazgo de la sección 8.
 
-## 11. Generaciones con tutores
+## 11. Generaciones con tutores, aprendices y apoyo al joven (120 días, tope n+2)
 
-(pendiente de las corridas en curso)
+Tres correcciones sucesivas guiadas por las muertes observadas: asignación familiar (los hijos morían al nacer sin poder trabajar), tutores para huérfanos (4 de 6 muertes eran huérfanos), y por último aprendices a media paga, apoyo al joven con menos de 5 monedas, jornada mediocre que paga ×0.6 y sin encadenar desplazamientos (los jóvenes morían al independizarse oscilando entre dos lugares de trabajo sin trabajar).
+
+| Mundo | Nacimientos | Generaciones | Vivos al día 120 | Muertes por hambre | Muertes por vejez | Hijos más parecidos a su progenitor | ICI progenitor / otros |
+|---|---|---|---|---|---|---|---|
+| town | 14 | 4 | 12 | **0** | 12 | 7 / 14 | 0.632 / 0.621 |
+| village_small | 14 | 4 | 12 | **0** | 12 | 10 / 14 | 0.638 / 0.628 |
+
+Trayectoria de la mortalidad infantil: 14/14 → 6/19 → 0/14. Los doce muertos de cada mundo son los diez fundadores y dos hijos de la primera generación que alcanzaron la vejez.
+
+Observaciones:
+
+- Con vidas completas y familias que funcionan, la semejanza hijo–progenitor baja (7-10 de 14 frente a 14-19 de 19 en las corridas con niños que morían pronto): cuanto más vive el hijo, más pesa su propia experiencia y menos la herencia. La transmisión existe pero es una ventaja inicial que la vida diluye; el mismo patrón que la deriva natural de 0.83 en cinco días de la sección 4.
+- El automodelo con conocimiento privado, en 34.000 predicciones en `town`: ventaja +0.018 en conversar (n = 5069), ≈0 en el resto. Estable en todas las corridas largas: la información individual predictiva vive en las relaciones.
+
+## 15. Balance de VIDA-1.0 y lo que sigue
+
+Instrumentos disponibles: vidas completas con nacimiento, familia, vejez y muerte; linaje y transmisión medibles; automodelo con conocimiento privado; cinco experimentos reproducibles (memoria, entorno, engaño, decisión, transferencia) con tamaños de efecto. Cada corrección de este bloque salió de una muerte o de un cero inexplicable en una tabla, no de una suposición.
+
+Siguiente bloque (VIDA-2.0, sociedad): 100+ agentes, economía con precios que respondan a la escasez, instituciones (escuela y hospital con reglas), reputación pública consultable, y el experimento de identidad de la fase 4 (eliminación selectiva de componentes con vidas largas). Antes, dos deudas: un motor LLM probado contra la API real y un dashboard con vista de linaje.
 
 ## 12. Experimento de decisión: la misma situación, historias distintas (10 días, 3 semillas)
 
