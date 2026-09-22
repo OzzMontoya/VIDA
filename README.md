@@ -4,7 +4,7 @@
 
 Plataforma experimental de simulación multiagente para estudiar cómo la memoria, la experiencia, el aprendizaje, las relaciones sociales y el entorno forman, modifican y preservan una identidad individual. Proyecto de investigación de Oziel Atlahi Montoya Mares (UTMA). El documento de diseño completo está en `Proyecto_VIDA_Documento_Completo_v2_1.pdf`.
 
-Estado: **VIDA-1.0 en desarrollo**: vidas completas con generaciones sobre el núcleo de 0.1 y los instrumentos de 0.2. 10 agentes viven 30 días simulados en un pueblo textual de 12 lugares: trabajan, compran, comen, descansan, estudian, conversan, piden y comparten información (a veces falsa), y cada uno acumula memoria episódica, semántica, social, autobiográfica y procedimental. Las decisiones son por reglas deterministas con semilla, o bien con un modelo de lenguaje (Claude) para todos o algunos agentes. Incluye experimentos configurables (memoria, entorno, engaño y transferencia entre soportes) con métricas científicas y el Índice de Continuidad Individual. VIDA-0.2 añade memoria reflexiva (conclusiones derivadas de varias experiencias), acoplamiento fuerte entre lo vivido y lo que se decide, un automodelo predictivo con métricas de calibración y ventaja frente a un modelo externo, creencias que se debilitan al olvidar, y escala a 100 agentes (`world.n_homes`).
+Estado: **VIDA-2.0 en desarrollo** (sociedad): sobre las vidas completas con generaciones de 1.0, precios que responden a la escasez, reputación pública, reposición proporcional a la población (100 agentes en `config/society.yaml`) y ablaciones de identidad en el experimento de transferencia. 10 agentes viven 30 días simulados en un pueblo textual de 12 lugares: trabajan, compran, comen, descansan, estudian, conversan, piden y comparten información (a veces falsa), y cada uno acumula memoria episódica, semántica, social, autobiográfica y procedimental. Las decisiones son por reglas deterministas con semilla, o bien con un modelo de lenguaje (Claude) para todos o algunos agentes. Incluye experimentos configurables (memoria, entorno, engaño y transferencia entre soportes) con métricas científicas y el Índice de Continuidad Individual. VIDA-0.2 añade memoria reflexiva (conclusiones derivadas de varias experiencias), acoplamiento fuerte entre lo vivido y lo que se decide, un automodelo predictivo con métricas de calibración y ventaja frente a un modelo externo, creencias que se debilitan al olvidar, y escala a 100 agentes (`world.n_homes`).
 
 Qué puede responder hoy el sistema sobre cualquier agente (criterio de éxito de 0.1): qué vivió, qué recuerda, qué aprendió, qué prefiere, a quién conoce, qué decisiones tomó y qué experiencias lo modificaron. Ver `python -m vida life`.
 
@@ -82,6 +82,13 @@ Antes de cada acción el agente predice, con su propia experiencia **en contexto
 
 - `village_small` (por defecto): 12 lugares, un mercado, dos trabajos con el mismo salario. Rutina forzada; útil para reproducibilidad y tests.
 - `town` (`config/town.yaml`): mercado caro y cercano frente a bazar barato y lejano; granja, taller y mina con salario y desgaste distintos (2.5/0.06, 3.5/0.08, 5.5/0.14); dos plazas. Elegir tiene consecuencias, así que la individualidad se ve más. Los precios y salarios son conocimiento público (`World.public_location_info`); el stock no.
+
+### Sociedad (VIDA-2.0)
+
+- **Precios dinámicos**: el precio de un recurso en un lugar es su precio base × (1 + 0.8·(1 − stock/reposición)), acotado entre 0.6 y 2.0: la escasez local encarece y el exceso abarata (`world.dynamic_prices`).
+- **Reputación pública**: cada agente ve la reputación de quienes tiene delante (`PerceptionSnapshot.visible_reputations`) y la usa para elegir con quién conversar, a quién preguntar y cuánto creer.
+- **Escala**: la reposición diaria se multiplica por n_agents/10; `config/society.yaml` corre 100 agentes en `town` con 25 casas.
+- **Ablaciones de identidad** (fase 4): `vida experiment transfer --conditions completa,sin_relaciones,sin_preferencias,sin_automodelo,sin_identidad,sin_creencias,ninguna` quita un solo componente de la mente y mide cuánta continuidad se pierde.
 
 ### Generaciones (VIDA-1.0)
 
