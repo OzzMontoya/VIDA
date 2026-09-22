@@ -82,11 +82,15 @@ def test_work_pays_according_to_skill_and_energy(small_world):
     agent.knowledge["job"].level = 1.0
     agent.needs["energy"].level = 1.0
     out = _resolve(world, agents, hub, "a01", ActionProposal(kind="work"), tick=10)
-    assert out.success and out.money_delta == pytest.approx(3.0)
+    assert out.success and out.money_delta == pytest.approx(3.0)  # habilidad y energía plenas: éxito seguro
+    assert out.details["p_success"] == 1.0
     agent.knowledge["job"].level = 0.0
     agent.needs["energy"].level = 0.0
-    out = _resolve(world, agents, hub, "a01", ActionProposal(kind="work"), tick=10)
-    assert out.money_delta == pytest.approx(0.75)
+    results = [_resolve(world, agents, hub, "a01", ActionProposal(kind="work"), tick=10) for _ in range(40)]
+    assert all(r.details["p_success"] == pytest.approx(0.35) for r in results)
+    assert {r.kind for r in results} == {"ok", "poor_performance"}, "sin habilidad ni energía, a veces sale mal"
+    assert all(r.money_delta == pytest.approx(0.75) for r in results if r.success)
+    assert all(r.money_delta == pytest.approx(0.225) for r in results if not r.success)
 
 
 def test_rest_is_better_at_home(small_world):
@@ -106,7 +110,7 @@ def test_socialize_needs_presence_and_acceptance_depends_on_trust(small_world):
     _place(world, agents, "a02", "plaza")
     agents["a02"].relationship_with("a01").trust = 1.0
     out = _resolve(world, agents, hub, "a01", ActionProposal(kind="socialize", target_agent="a02"))
-    assert out.details["p_accept"] == pytest.approx(0.9)
+    assert 0.7 <= out.details["p_accept"] <= 1.0  # confianza plena + reputación media + afinidad
     accepted = [
         _resolve(world, agents, hub, "a01", ActionProposal(kind="socialize", target_agent="a02")).success
         for _ in range(40)
@@ -158,8 +162,9 @@ def test_seek_care_and_study(small_world):
     assert out.success and out.need_deltas["health"] == 0.3 and out.money_delta == -5.0
     assert world.locations["hospital"].stock("care") == 4
     _place(world, agents, "a01", "school")
+    agents["a01"].personality.openness = 0.9
     out = _resolve(world, agents, hub, "a01", ActionProposal(kind="study"), tick=10)
-    assert out.success and out.details["skill"] == "general"
+    assert out.details["skill"] == "general" and out.kind in {"ok", "distracted"}
 
 
 def test_scheduled_restock_and_shortage(small_world):

@@ -97,8 +97,18 @@ def _flatten_event(payload: dict[str, Any]) -> dict[str, Any]:
     return row
 
 
+def _preset_world(cfg: RunConfig):
+    try:
+        return PRESETS[cfg.world.preset](cfg)
+    except KeyError as exc:
+        raise ValueError(
+            f"Preset de mundo '{cfg.world.preset}' desconocido en esta versión del código. "
+            "Si acabas de añadirlo, reinicia el servidor de Streamlit (no recarga los módulos importados)."
+        ) from exc
+
+
 def _resource_timeline(cfg: RunConfig, events: list[dict[str, Any]]) -> pd.DataFrame:
-    world = PRESETS[cfg.world.preset](cfg)
+    world = _preset_world(cfg)
     stock: dict[tuple[str, str], int] = {}
     rows: list[dict[str, Any]] = []
     for loc in world.locations.values():
@@ -161,7 +171,7 @@ def load_run(db_path: Path) -> RunData:
         initial_states[aid] = AgentState.model_validate_json(group.iloc[0]["state_json"])
         final_states[aid] = AgentState.model_validate_json(group.iloc[-1]["state_json"])
 
-    world = PRESETS[cfg.world.preset](cfg)
+    world = _preset_world(cfg)
     location_types = {loc.id: loc.type for loc in world.locations.values()}
     if not events.empty:
         events["action_group"] = events["action"].map(ACTION_GROUPS)

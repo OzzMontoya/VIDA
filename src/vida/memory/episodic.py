@@ -11,7 +11,8 @@ from vida.memory.base import AgentMemory, MemoryRecord
 from vida.world.actions import ActionOutcome
 
 # Peso extra de importancia por resultado adverso: los fracasos graves se recuerdan más.
-NEGATIVE_WEIGHT = {"resource_absent": 0.5, "rejected": 0.4, "insufficient_funds": 0.3, "blocked": 0.2, "no_reply": 0.15}
+NEGATIVE_WEIGHT = {"resource_absent": 0.5, "rejected": 0.4, "insufficient_funds": 0.3, "blocked": 0.2, "no_reply": 0.15,
+                   "poor_performance": 0.3, "distracted": 0.15}
 NEGATIVE_KINDS = set(NEGATIVE_WEIGHT)
 
 
@@ -51,7 +52,9 @@ def describe(agent: AgentState, outcome: ActionOutcome, names: dict[str, str]) -
     if a == "consume":
         return f"Comí {outcome.resource}"
     if a == "work":
-        return f"Trabajé en {loc} y gané {outcome.money_delta:.2f}"
+        if outcome.success:
+            return f"Trabajé en {loc} y gané {outcome.money_delta:.2f}"
+        return f"Me fue mal trabajando en {loc}: sólo gané {outcome.money_delta:.2f}"
     if a == "rest":
         return "Descansé en casa" if outcome.details.get("at_home") else f"Descansé en {loc}"
     if a == "socialize":
@@ -63,7 +66,7 @@ def describe(agent: AgentState, outcome: ActionOutcome, names: dict[str, str]) -
     if a == "share_info":
         return f"Le dije a {other} dónde encontrar {outcome.resource}"
     if a == "study":
-        return f"Estudié en {loc}"
+        return f"Estudié en {loc}" if outcome.success else f"No logré concentrarme estudiando en {loc}"
     if a == "seek_care":
         return f"Recibí atención en {loc}" if outcome.success else f"No pude pagar la atención en {loc}"
     return f"{a}:{k}"

@@ -26,7 +26,7 @@ ACTION_KINDS: tuple[ActionKind, ...] = (
 
 OutcomeKind = Literal[
     "ok", "blocked", "closed", "resource_absent", "insufficient_funds",
-    "rejected", "no_reply", "illegal",
+    "rejected", "no_reply", "illegal", "poor_performance", "distracted",
 ]
 
 ReplyKind = Literal["truth", "lie", "omit", "partial"]

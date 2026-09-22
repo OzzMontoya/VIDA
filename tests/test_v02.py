@@ -118,6 +118,7 @@ def test_town_preset_offers_real_alternatives(cfg):
     out = world.resolve(a, ActionProposal(kind="acquire", resource="bread"), agents, RngHub(1).sub("w"), 10, "e1")
     assert out.success and out.money_delta == -1.2
     world.place_agent("a01", "mine"); a.location_id = "mine"
+    a.knowledge["job"].level = 1.0; a.needs["energy"].level = 1.0  # éxito seguro: p_success = 1
     out = world.resolve(a, ActionProposal(kind="work"), agents, RngHub(1).sub("w"), 8, "e2")
     assert out.success and out.need_deltas["energy"] == -0.14 and out.money_delta > 2.0
     engine = SimulationEngine(c, run_id="town", sha="test")

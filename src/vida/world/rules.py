@@ -38,8 +38,12 @@ STUDY_SKILL_GAIN = 0.03
 STUDY_ENERGY = -0.03
 CARE_HEALTH = 0.30
 SOCIAL_GAIN = 0.25
-SOCIAL_BASE_ACCEPT = 0.30
-SOCIAL_TRUST_WEIGHT = 0.60
+SOCIAL_BASE_ACCEPT = 0.15
+SOCIAL_TRUST_WEIGHT = 0.45
+SOCIAL_REPUTATION_WEIGHT = 0.25
+SOCIAL_AFFINITY_WEIGHT = 0.15
+WORK_BASE_SUCCESS = 0.35  # p_éxito = base + 0.5·habilidad + 0.15·energía: quién eres cambia cómo te va
+STUDY_BASE_SUCCESS = 0.40
 
 
 @dataclass
@@ -161,12 +165,21 @@ def _work(world, agent, proposal, ctx, perception, base) -> ActionOutcome:
     energy = agent.needs["energy"].level
     performance = round((0.5 + 0.5 * skill) * (0.5 + 0.5 * energy), 6)
     loc = world.locations[perception.location_id]
-    earned = round(world.wage(loc.id) * performance, 6)
     energy_cost = WORK_ENERGY if loc.work_energy is None else -abs(loc.work_energy)
+    p_success = min(1.0, WORK_BASE_SUCCESS + 0.5 * skill + 0.15 * energy)
+    if ctx.rng.random() >= p_success:
+        # Jornada malograda: depende de la habilidad y la energía del individuo, no del mundo.
+        earned = round(world.wage(loc.id) * performance * 0.3, 6)
+        return ActionOutcome(
+            **base, kind="poor_performance", success=False, money_delta=earned,
+            need_deltas={"energy": energy_cost, "hunger": WORK_HUNGER}, valence=-0.2,
+            details={"performance": performance, "p_success": round(p_success, 6), "skill_gain": WORK_SKILL_GAIN / 2, "skill": "job"},
+        )
+    earned = round(world.wage(loc.id) * performance, 6)
     return ActionOutcome(
         **base, kind="ok", success=True, money_delta=earned,
         need_deltas={"energy": energy_cost, "hunger": WORK_HUNGER, "safety": 0.02}, valence=0.3,
-        details={"performance": performance, "skill_gain": WORK_SKILL_GAIN, "skill": "job"},
+        details={"performance": performance, "p_success": round(p_success, 6), "skill_gain": WORK_SKILL_GAIN, "skill": "job"},
     )
 
 
@@ -186,7 +199,10 @@ def _socialize(world, agent, proposal, ctx, perception, base) -> ActionOutcome:
         return _illegal(base, "target not present")
     other = ctx.agents[other_id]
     trust_in_agent = other.relationship_with(agent.id).trust
-    p_accept = SOCIAL_BASE_ACCEPT + SOCIAL_TRUST_WEIGHT * trust_in_agent
+    affinity = 1.0 - abs(agent.personality.agreeableness - other.personality.agreeableness) * 0.5 \
+        - abs(agent.personality.extraversion - other.personality.extraversion) * 0.5
+    p_accept = (SOCIAL_BASE_ACCEPT + SOCIAL_TRUST_WEIGHT * trust_in_agent
+                + SOCIAL_REPUTATION_WEIGHT * agent.reputation + SOCIAL_AFFINITY_WEIGHT * affinity)
     accepted = ctx.rng.random() < p_accept
     if not accepted:
         return ActionOutcome(**base, kind="rejected", success=False, target_agent=other_id,
@@ -252,10 +268,17 @@ def _share_info(world, agent, proposal, ctx, perception, base) -> ActionOutcome:
 
 
 def _study(world, agent, proposal, ctx, perception, base) -> ActionOutcome:
+    p_success = min(1.0, STUDY_BASE_SUCCESS + 0.5 * agent.personality.openness + 0.1 * agent.knowledge_level("general"))
+    if ctx.rng.random() >= p_success:
+        return ActionOutcome(
+            **base, kind="distracted", success=False,
+            need_deltas={"knowledge": STUDY_KNOWLEDGE / 4, "energy": STUDY_ENERGY}, valence=-0.1,
+            details={"p_success": round(p_success, 6), "skill": "general", "skill_gain": 0.0},
+        )
     return ActionOutcome(
         **base, kind="ok", success=True,
         need_deltas={"knowledge": STUDY_KNOWLEDGE, "energy": STUDY_ENERGY}, valence=0.2,
-        details={"skill_gain": STUDY_SKILL_GAIN, "skill": "general"},
+        details={"skill_gain": STUDY_SKILL_GAIN, "skill": "general", "p_success": round(p_success, 6)},
     )
 
 
