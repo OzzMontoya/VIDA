@@ -174,11 +174,13 @@ class SimulationEngine:
                                  retrieved_memory_ids=[m.id for m in ctx.memories], decision=decision, proposal=proposal)
         outcome = self.world.resolve(agent, proposal, self.agents, self.hub.sub("world"), tick, event.event_id)
         agent.apply_outcome(outcome)
-        own_err, base_err = agent.self_model.record(predicted, baseline, outcome.success, window=self.cfg.run.ticks_per_day)
+        matched = agent.self_model.table.has_evidence(levels[0])
+        own_err, base_err = agent.self_model.record(predicted, baseline, outcome.success,
+                                                    window=self.cfg.run.ticks_per_day, matched=matched)
         agent.self_model.learn(levels, outcome.success)
         self.population_model.update(levels, outcome.success)
         event.prediction = {"p_success": predicted, "baseline": baseline, "actual": 1.0 if outcome.success else 0.0,
-                            "error": round(own_err, 6), "baseline_error": round(base_err, 6)}
+                            "error": round(own_err, 6), "baseline_error": round(base_err, 6), "matched": 1.0 if matched else 0.0}
         for other_id, deltas in sorted(outcome.other_need_deltas.items()):
             if other_id in self.agents:
                 self.agents[other_id].apply_need_deltas(deltas)

@@ -84,6 +84,8 @@ def agent_metrics(agent: AgentState, memory: AgentMemory, events: list[EventReco
     # Automodelo predictivo (criterio 1 de docs/criterios_consciencia.md)
     m["self_model_calibration"] = agent.self_model.calibration()
     m["self_model_advantage"] = agent.self_model.advantage()
+    m["self_model_advantage_matched"] = agent.self_model.advantage_matched()
+    m["self_model_matched_n"] = agent.self_model.matched_n
     m["self_model_n"] = agent.self_model.n
 
     # Identidad y consistencia conductual

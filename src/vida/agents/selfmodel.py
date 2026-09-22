@@ -71,6 +71,9 @@ class ContextTable(BaseModel):
     def total_attempts(self) -> int:
         return sum(n for _, n in self.counts.values()) // 4 if self.counts else 0
 
+    def has_evidence(self, key: str) -> bool:
+        return self.counts.get(key, [0, 0])[1] >= MIN_EVIDENCE
+
 
 class SelfModelState(BaseModel):
     table: ContextTable = Field(default_factory=ContextTable)
@@ -78,6 +81,10 @@ class SelfModelState(BaseModel):
     abs_error_sum: float = 0.0
     baseline_error_sum: float = 0.0
     recent_errors: list[float] = Field(default_factory=list)  # ventana móvil (último día)
+    # Comparación emparejada: sólo predicciones donde el agente ya tenía evidencia en el contexto más específico.
+    matched_n: int = 0
+    matched_abs_error_sum: float = 0.0
+    matched_baseline_error_sum: float = 0.0
 
     def predict(self, levels: list[str]) -> float:
         return self.table.predict(levels)
@@ -85,13 +92,17 @@ class SelfModelState(BaseModel):
     def learn(self, levels: list[str], success: bool) -> None:
         self.table.update(levels, success)
 
-    def record(self, predicted: float, baseline: float, actual: bool, window: int = 24) -> tuple[float, float]:
+    def record(self, predicted: float, baseline: float, actual: bool, window: int = 24, matched: bool = False) -> tuple[float, float]:
         y = 1.0 if actual else 0.0
         own = abs(predicted - y)
         base = abs(baseline - y)
         self.n += 1
         self.abs_error_sum = round(self.abs_error_sum + own, 6)
         self.baseline_error_sum = round(self.baseline_error_sum + base, 6)
+        if matched:
+            self.matched_n += 1
+            self.matched_abs_error_sum = round(self.matched_abs_error_sum + own, 6)
+            self.matched_baseline_error_sum = round(self.matched_baseline_error_sum + base, 6)
         self.recent_errors.append(round(own, 6))
         del self.recent_errors[:-window]
         return own, base
@@ -101,6 +112,10 @@ class SelfModelState(BaseModel):
 
     def advantage(self) -> float:
         return round((self.baseline_error_sum - self.abs_error_sum) / self.n, 6) if self.n else 0.0
+
+    def advantage_matched(self) -> float:
+        """Ventaja sólo donde la experiencia propia era específica: aísla la información individual."""
+        return round((self.matched_baseline_error_sum - self.matched_abs_error_sum) / self.matched_n, 6) if self.matched_n else 0.0
 
     def recent_error(self) -> float:
         return round(sum(self.recent_errors) / len(self.recent_errors), 6) if self.recent_errors else 0.0
