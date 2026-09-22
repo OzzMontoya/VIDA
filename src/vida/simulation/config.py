@@ -71,6 +71,8 @@ class LifecycleSection(BaseModel):
     inheritance: float = 0.5  # peso de la personalidad del progenitor en la del hijo
     population_cap: int | None = None  # None = n_agents + 2: nacen hijos mientras hay adultos jóvenes
     parent_min_money: float = 6.0
+    allowance_per_day: float = 10.0  # dinero que el progenitor vivo pasa a diario a cada hijo dependiente (infancia/adolescencia)
+    birth_min_money: float = 12.0  # dinero mínimo con el que nace un hijo
 
 
 class MemoryWeights(BaseModel):

@@ -25,7 +25,7 @@ def test_child_inherits_and_receives_culture(small_world, small_cfg):
     semantic.record_availability(mem, "fruit", "farm", False, tick=6)
     child = generations.make_child(small_cfg, world, parent, mem, "a03", "Nova", tick=48, rng=hub.sub("births"))
     assert child.parent_id == "a01" and child.generation == 1 and child.home_id == parent.home_id
-    assert child.life_stage == "adolescence" and child.money == 10.0 and parent.money == 20.0
+    assert child.life_stage == "adolescence" and child.money == 12.0 and parent.money == 18.0  # mínimo al nacer
     for trait in ("openness", "extraversion", "agreeableness"):
         p, k = getattr(parent.personality, trait), getattr(child.personality, trait)
         assert abs(k - p) <= 0.5 * abs(p - 0.1) + 0.5 * abs(0.9 - p) + 1e-9  # dentro del rango de mezcla
@@ -119,3 +119,16 @@ def test_default_cap_allows_early_births_from_young_adults(cfg):
     engine.run(ticks=24 * 4)
     assert len(engine.births) == 2, "tope por defecto = población + 2: dos nacimientos sin necesidad de muertes"
     assert all(engine.agents[b].generation == 1 for b in engine.births)
+
+
+def test_dependent_children_receive_allowance_and_survive(cfg):
+    c = _long_cfg(cfg)
+    engine = SimulationEngine(c, run_id="allow", sha="test")
+    engine.run(ticks=24 * 12)  # los hijos nacen en adolescencia y llegan a juventud el día 6 tras nacer
+    assert len(engine.births) == 2
+    allowances = [e for e in engine.events if e.event_type == "world_event" and e.note == "allowance"]
+    assert allowances, "los progenitores deben pasar asignación a los hijos dependientes"
+    for b in engine.births:
+        child = engine.agents[b]
+        assert child.alive, f"el hijo {b} debería sobrevivir con la asignación familiar"
+        assert any(e.world_delta.get("to") == b for e in allowances)

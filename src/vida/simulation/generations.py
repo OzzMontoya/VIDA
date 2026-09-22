@@ -55,7 +55,7 @@ def make_child(cfg: RunConfig, world: World, parent: AgentState, parent_memory: 
         life_stage=stage_for_days(cfg, age_days),
         personality=inherited_personality(parent.personality, rng, lc.inheritance),
         needs=build_needs(cfg, levels), location_id=parent.home_id, home_id=parent.home_id,
-        money=round(parent.money / 3, 6),
+        money=round(max(parent.money / 3, min(lc.birth_min_money, parent.money)), 6),
         knowledge={
             "job": KnowledgeItem(level=0.0, source="birth"),
             "general": KnowledgeItem(level=round(parent.knowledge_level("general") * 0.3, 6), source="parent"),

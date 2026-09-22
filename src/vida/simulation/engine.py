@@ -314,12 +314,34 @@ class SimulationEngine:
         self._emit(self._next_event("birth", child_id, state_after=child.summary(),
                                     note=f"parent={parent.id};generation={child.generation}"))
 
+    def _family_support(self) -> None:
+        """Al inicio del día, cada progenitor vivo pasa una asignación a sus hijos dependientes (sección 16: familias)."""
+        allowance = self.cfg.lifecycle.allowance_per_day
+        if allowance <= 0 or self.clock.hour != 0:
+            return
+        for aid in self.alive_ids():
+            child = self.agents[aid]
+            if child.life_stage not in {"infancy", "adolescence"} or not child.parent_id:
+                continue
+            parent = self.agents.get(child.parent_id)
+            if parent is None or not parent.alive:
+                continue
+            amount = round(min(allowance, parent.money * 0.8), 6)
+            if amount <= 0:
+                continue
+            parent.money = round(parent.money - amount, 6)
+            child.money = round(child.money + amount, 6)
+            child.relationship_with(parent.id).adjust(affection=0.01, trust=0.01)
+            self._emit(self._next_event("world_event", "world", note="allowance",
+                                        world_delta={"kind": "allowance", "from": parent.id, "to": child.id, "amount": amount}))
+
     # --- API pública -------------------------------------------------------
     def step(self) -> list[EventRecord]:
         start = len(self.events)
         for delta in self.world.apply_scheduled_events(self.clock.tick):
             self._emit(self._next_event("world_event", "world", world_delta=delta, note=delta["kind"]))
         self._maybe_birth()
+        self._family_support()
         order = self.alive_ids()
         self.hub.sub("turn_order").shuffle(order)
         for aid in order:
