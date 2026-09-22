@@ -160,6 +160,27 @@ Observaciones:
 - Con vidas completas y familias que funcionan, la semejanza hijo–progenitor baja (7-10 de 14 frente a 14-19 de 19 en las corridas con niños que morían pronto): cuanto más vive el hijo, más pesa su propia experiencia y menos la herencia. La transmisión existe pero es una ventaja inicial que la vida diluye; el mismo patrón que la deriva natural de 0.83 en cinco días de la sección 4.
 - El automodelo con conocimiento privado, en 34.000 predicciones en `town`: ventaja +0.018 en conversar (n = 5069), ≈0 en el resto. Estable en todas las corridas largas: la información individual predictiva vive en las relaciones.
 
+## 16. VIDA-2.0: ablaciones de identidad (fase 4; `town`, corte al día 30, horizonte 10 días, 3 semillas)
+
+Se quita un solo componente de la mente del agente a01 y se mide cuánta continuidad se pierde frente a la continuación sin intervención.
+
+| Ablación | ICI vs referencia | memoria | preferencias | relaciones | decisiones | autorrepresentación |
+|---|---|---|---|---|---|---|
+| completa | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| sin creencias | 0.903 | 0.797 | 0.973 | 0.970 | 0.926 | 0.833 |
+| sin identidad (etiquetas, valores, hábitos) | 0.896 | 0.804 | 0.972 | 0.962 | 0.917 | 0.791 |
+| sin preferencias | 0.851 | 0.733 | 0.843 | 0.965 | 0.921 | 0.750 |
+| **sin automodelo** | 0.845 | 0.679 | 0.960 | 0.943 | **0.890** | 0.694 |
+| sin relaciones | 0.823 | 0.748 | 0.965 | 0.752 | 0.946 | 0.580 |
+| memoria borrada 50 % | 0.803 | 0.560 | 0.943 | 0.949 | 0.921 | 0.750 |
+| ninguna (mente nueva) | 0.547 | 0.206 | 0.764 | 0.723 | 0.885 | 0.498 |
+
+Observaciones:
+
+- Orden de importancia para la continuidad: memoria > relaciones > automodelo ≈ preferencias > identidad ≈ creencias. Las creencias y las etiquetas de identidad se regeneran rápido a partir de la experiencia; la memoria y las relaciones no.
+- **Criterio 2 de `docs/criterios_consciencia.md` (necesidad causal del automodelo), medido por primera vez**: al quitar el automodelo, la dimensión de decisiones cae a 0.890, la más baja de todas las ablaciones (las demás quedan entre 0.917 y 0.946), y la memoria posterior diverge más (0.679) porque el agente hace otras cosas. Interpretación: el automodelo es causalmente necesario para la coherencia de conducta, con un efecto real pero modesto (≈0.03-0.06 de ICI). No es evidencia de autorrepresentación consciente; es la medida que el criterio pedía, y sale positiva en el nivel de mecanismo.
+- Con vidas de 30 días la deriva natural en 10 días es 0.866: cualquier ablación con ICI por encima de ese valor (creencias, identidad) es indistinguible de vivir diez días más.
+
 ## 15. Balance de VIDA-1.0 y lo que sigue
 
 Instrumentos disponibles: vidas completas con nacimiento, familia, vejez y muerte; linaje y transmisión medibles; automodelo con conocimiento privado; cinco experimentos reproducibles (memoria, entorno, engaño, decisión, transferencia) con tamaños de efecto. Cada corrección de este bloque salió de una muerte o de un cero inexplicable en una tabla, no de una suposición.
