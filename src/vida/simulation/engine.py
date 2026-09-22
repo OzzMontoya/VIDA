@@ -325,7 +325,9 @@ class SimulationEngine:
                 continue
             parent = self.agents.get(child.parent_id)
             if parent is None or not parent.alive:
-                continue
+                parent = self._guardian_for(child)  # orfandad: otro adulto asume el cuidado
+                if parent is None:
+                    continue
             amount = round(min(allowance, parent.money * 0.8), 6)
             if amount <= 0:
                 continue
@@ -333,7 +335,26 @@ class SimulationEngine:
             child.money = round(child.money + amount, 6)
             child.relationship_with(parent.id).adjust(affection=0.01, trust=0.01)
             self._emit(self._next_event("world_event", "world", note="allowance",
-                                        world_delta={"kind": "allowance", "from": parent.id, "to": child.id, "amount": amount}))
+                                        world_delta={"kind": "allowance", "from": parent.id, "to": child.id, "amount": amount,
+                                                     "guardian": parent.id != child.parent_id}))
+
+    def _guardian_for(self, child: AgentState) -> AgentState | None:
+        """Tutor de un huérfano: el adulto vivo con más afecto hacia el hijo (empates por id); se recuerda."""
+        if child.guardian_id and child.guardian_id in self.agents and self.agents[child.guardian_id].alive:
+            return self.agents[child.guardian_id]
+        adults = [self.agents[a] for a in self.alive_ids()
+                  if a != child.id and self.agents[a].life_stage in {"youth", "adulthood", "old_age"}]
+        if not adults:
+            return None
+        guardian = max(adults, key=lambda a: (a.relationships.get(child.id).affection if a.relationships.get(child.id) else 0.0,
+                                              a.money, a.id))
+        child.guardian_id = guardian.id
+        child.relationship_with(guardian.id).adjust(familiarity=0.2, affection=0.1, trust=0.1)
+        guardian.relationship_with(child.id).adjust(familiarity=0.2, affection=0.1)
+        self.memories[child.id].add("autobiographical", self.clock.tick,
+                                    f"Día {self.clock.day}: {guardian.name} se hizo cargo de mí",
+                                    importance=0.9, valence=0.4, tags={"autobio:guardian", f"agent:{guardian.id}"})
+        return guardian
 
     # --- API pública -------------------------------------------------------
     def step(self) -> list[EventRecord]:

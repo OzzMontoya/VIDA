@@ -81,7 +81,7 @@ Antes de cada acción el agente predice, con su propia experiencia **en contexto
 
 ### Generaciones (VIDA-1.0)
 
-Cuando la población viva queda por debajo del tope, cada `birth_check_days` nace un hijo de un adulto vivo: hereda parte de la personalidad (`inheritance`), nace en adolescencia en la casa del progenitor con un tercio de su dinero, recibe como creencias *contadas* lo que el progenitor recuerda haber encontrado (verdadero o no) y empieza con un vínculo familiar mutuo. Cada agente lleva `parent_id` y `generation`; el evento `birth` queda en el registro. `python -m vida lineage --run <id>` compara con el ICI a cada hijo con su progenitor y con los demás adultos de la generación anterior: si se parece más a su progenitor, hubo transmisión.
+Cuando la población viva queda por debajo del tope, cada `birth_check_days` nace un hijo de un adulto vivo: hereda parte de la personalidad (`inheritance`), nace en adolescencia en la casa del progenitor con un tercio de su dinero, recibe como creencias *contadas* lo que el progenitor recuerda haber encontrado (verdadero o no) y empieza con un vínculo familiar mutuo. Mientras es dependiente (infancia y adolescencia) recibe una asignación diaria del progenitor; si éste muere, el adulto con más afecto por el hijo asume el papel de tutor (`guardian_id`). Cada agente lleva `parent_id` y `generation`; el evento `birth` queda en el registro. `python -m vida lineage --run <id>` compara con el ICI a cada hijo con su progenitor y con los demás adultos de la generación anterior: si se parece más a su progenitor, hubo transmisión.
 
 ### Automodelo con conocimiento privado
 

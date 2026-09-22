@@ -130,8 +130,26 @@ Por acción (≥6 intentos propios): conversar +0.012, trabajar +0.012, estudiar
 
 Observación: con mucha experiencia la ventaja converge a cero, no a un valor positivo; la información individual sigue concentrada en conversar y trabajar, las dos acciones cuyo resultado depende del agente. Esa primera corrida no tuvo nacimientos: todos envejecieron a la vez y cuando hubo hueco no quedaban adultos jóvenes. Se cambió el tope de población a n+2 para que nazcan hijos mientras hay progenitores elegibles (resultados de linaje en la sección 10).
 
+## 10. VIDA-1.0: generaciones (120 días, tope n+2, asignación familiar)
+
+| Mundo | Nacimientos | Generaciones | Vivos al día 120 | Hijos muertos de hambre | Hijos más parecidos a su progenitor que a los demás | ICI con progenitor / con otros |
+|---|---|---|---|---|---|---|
+| town | 19 | 5 | 12 | 6 (4 huérfanos) | 14 / 19 | 0.603 / 0.578 |
+| village_small | 20 | 4 | 12 | 6 | 19 / 20 | 0.604 / 0.561 |
+
+Observaciones:
+
+- Surge una sociedad multigeneracional: los diez fundadores mueren de vejez entre los días 45 y 65 y la población se reconstruye con sus descendientes hasta la quinta generación.
+- La transmisión se mide, no se supone: la personalidad del hijo se parece más a la del progenitor (≈0.89 frente a 0.83 con otros adultos) por construcción; pero también las **decisiones** (0.91 frente a 0.77 en algunos hijos) y el conjunto del ICI, aunque las creencias contadas por el progenitor sobreviven poco (0-3 por hijo al final) porque la experiencia propia las sustituye.
+- La primera versión sin soporte familiar produjo 14 nacimientos y 14 muertes infantiles por hambre: nacer en adolescencia sin poder trabajar no es viable sin familia. La asignación diaria redujo la mortalidad infantil a 6 de 19, y de esas, 4 eran huérfanos cuyo progenitor murió antes de que pudieran trabajar. Se añadió el tutor (el adulto con más afecto por el hijo asume la asignación); resultados en la sección 11.
+- Automodelo con vidas largas (`town`, 26.000 predicciones): la ventaja converge a 0.000 con más de 20 intentos propios y sigue siendo positiva sólo en conversar (+0.022, n = 4077). Confirmación con diez veces más datos del hallazgo de la sección 8.
+
+## 11. Generaciones con tutores
+
+(pendiente de las corridas en curso)
+
 ## 5. Lo que estos resultados dicen sobre los objetivos
 
-- **Objetivo 2 (identidad y continuidad)**: en este mundo, "quién es" el agente vive sobre todo en su memoria y sus relaciones; la personalidad fija pesa poco porque las reglas de decisión la usan débilmente. Un mundo con más opciones y menos rutina forzada haría más visibles las diferencias.
+- **Objetivo 2 (identidad y continuidad)**: en este mundo, "quién es" el agente vive sobre todo en su memoria y sus relaciones; la personalidad fija pesa poco porque las reglas de decisión la usan débilmente. Un mundo con más opciones y menos rutina forzada haría más visibles las diferencias. Con generaciones (sección 10) aparece una segunda forma de continuidad, la transmisión a los hijos: medible, parcial y dominada por la experiencia propia del hijo.
 - **Objetivo 3 (cambio de soporte)**: el experimento de transferencia ya es reproducible y ordena las condiciones de forma estable. Es el instrumento; los números aún describen un mundo pequeño.
 - **Objetivo 1 (consciencia)**: el primer criterio operativo (automodelo con ventaja predictiva) se midió con y sin contexto, y con comparación emparejada: negativo en todos los casos. Con consecuencias dependientes del individuo y análisis por evidencia (sección 8), la ventaja aparece sólo en conversar y con mucha experiencia: el instrumento detecta señal individual donde el mundo la genera. Siguiente paso: vidas más largas (VIDA-1.0) para acumular evidencia, y un automodelo que use también rasgos propios (habilidad, reputación) en lugar de sólo conteos.

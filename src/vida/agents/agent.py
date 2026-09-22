@@ -120,6 +120,7 @@ class AgentState(BaseModel):
     counters: dict[str, int] = Field(default_factory=dict)
     self_model: SelfModelState = Field(default_factory=SelfModelState)
     parent_id: str | None = None
+    guardian_id: str | None = None  # adulto que asume la asignación si el progenitor muere
     generation: int = 0
     birth_tick: int = 0
 

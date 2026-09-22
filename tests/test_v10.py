@@ -132,3 +132,19 @@ def test_dependent_children_receive_allowance_and_survive(cfg):
         child = engine.agents[b]
         assert child.alive, f"el hijo {b} debería sobrevivir con la asignación familiar"
         assert any(e.world_delta.get("to") == b for e in allowances)
+
+
+def test_orphans_get_a_guardian(cfg):
+    c = _long_cfg(cfg)
+    engine = SimulationEngine(c, run_id="orphan", sha="test")
+    engine.run(ticks=24 * 2)
+    assert engine.births
+    child = engine.agents[engine.births[0]]
+    engine.agents[child.parent_id].needs["health"].level = 0.0  # muere el progenitor
+    engine.run(ticks=24 * 3)
+    assert child.parent_id in engine.deaths
+    assert child.guardian_id and engine.agents[child.guardian_id].alive
+    guardian_allowances = [e for e in engine.events if e.note == "allowance" and e.world_delta.get("to") == child.id
+                           and e.world_delta.get("guardian")]
+    assert guardian_allowances and child.alive
+    assert any("se hizo cargo" in m.content for m in engine.memories[child.id].all())
