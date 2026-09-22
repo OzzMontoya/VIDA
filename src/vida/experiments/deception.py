@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from vida.simulation.config import RunConfig
 
-KEY_METRICS = ["deception_rate", "lies_discovered", "mean_trust", "reputation", "info_exchanges", "money",
+KEY_METRICS = ["deception_rate", "deception_rate_early", "deception_rate_late", "lies_discovered", "mean_trust", "reputation",
                "social_acceptance_rate"]
 
 

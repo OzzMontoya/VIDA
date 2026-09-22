@@ -122,3 +122,21 @@ def test_starving_and_broke_agent_works_instead_of_oscillating(small_world, smal
     agent.money = 5.0
     proposal, _ = RuleBasedEngine(small_cfg.decision).decide(_ctx(world, agents, small_cfg, "a01", tick=10), hub.sub("d"))
     assert proposal.kind == "acquire"
+
+
+def test_damaged_reputation_deters_further_lying(small_world, small_cfg):
+    world, agents, hub = small_world
+    engine = RuleBasedEngine(small_cfg.decision)
+    liar = agents["a02"]
+    liar.personality.agreeableness = 0.5
+    liar.identity.core_values["honesty"] = 0.0
+    liar.needs["hunger"].level = 1.0  # sin competencia por el recurso: p base = 0.5, por debajo del tope
+    ctx = _ctx(world, agents, small_cfg, "a02")
+    p_fresh = engine._deception_probability(ctx, "a01", "bread")
+    liar.counters["reply:lie"] = 3
+    liar.reputation = 1.0
+    p_reputed = engine._deception_probability(ctx, "a01", "bread")
+    liar.reputation = 0.2
+    p_damaged = engine._deception_probability(ctx, "a01", "bread")
+    assert p_fresh == p_reputed > p_damaged
+    assert p_damaged == round(p_fresh * (0.4 + 0.6 * 0.2), 6)

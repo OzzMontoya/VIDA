@@ -117,6 +117,16 @@ def agent_metrics(agent: AgentState, memory: AgentMemory, events: list[EventReco
     honest = agent.counters.get("reply:truth", 0) + agent.counters.get("reply:partial", 0) + agent.counters.get("share:truth", 0)
     m["deception_rate"] = round(lies / (lies + honest), 6) if lies + honest else 0.0
     m["info_exchanges"] = sum(1 for e in actions if e.outcome.action in {"ask_info", "share_info"})
+    # Cambio de estrategia: tasa de engaño (según el libro del mundo) en la primera y la segunda mitad de la vida.
+    told = [e for e in events if e.event_type == "action" and e.outcome is not None and e.outcome.details.get("_world")
+            and ((e.outcome.action == "ask_info" and e.outcome.target_agent == agent.id)
+                 or (e.outcome.action == "share_info" and e.agent_id == agent.id))]
+    def _lied(e: EventRecord) -> bool:
+        w = e.outcome.details["_world"]
+        return w.get("intent") == "lie" or w.get("intent_truthful") is False
+    half_t = len(told) // 2
+    m["deception_rate_early"] = round(sum(_lied(e) for e in told[:half_t]) / half_t, 6) if half_t else 0.0
+    m["deception_rate_late"] = round(sum(_lied(e) for e in told[half_t:]) / (len(told) - half_t), 6) if len(told) - half_t else 0.0
     m["reputation"] = round(agent.reputation, 6)
 
     # Aprendizaje

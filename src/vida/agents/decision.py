@@ -342,6 +342,11 @@ class RuleBasedEngine:
         rel = agent.relationships.get(asker_id)
         affection = rel.affection if rel else 0.5
         p = (1.0 - agent.personality.agreeableness) * (1.0 - honesty) * competition * (1.2 - 0.4 * affection)
+        # Cambio de estrategia (sección 20): una reputación dañada disuade de seguir mintiendo. El agente conoce
+        # su reputación (parte de su estado, escrita por el mundo) y cuántas veces ha mentido.
+        lies = agent.counters.get("reply:lie", 0) + agent.counters.get("share:lie", 0)
+        if lies:
+            p *= 0.4 + 0.6 * agent.reputation
         return max(0.0, min(0.9, round(p, 6)))
 
     def _false_location(self, ctx: DecisionContext, resource: str, rng: random.Random) -> str | None:
