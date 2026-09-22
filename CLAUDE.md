@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 VIDA (Vida Artificial, Identidad y Desarrollo de Agentes) es una plataforma experimental de simulación multiagente para estudiar cómo memoria, experiencia, aprendizaje, relaciones sociales y entorno forman y preservan una identidad individual. Proyecto de investigación académica (UTMA); el rigor científico y la reproducibilidad pesan más que la velocidad. El documento de diseño completo es `Proyecto_VIDA_Documento_Completo_v2_1.pdf` (en español; léelo con `pdftotext -layout <pdf> -`, la herramienta Read no puede renderizarlo).
 
-Estado: **VIDA-0.1, núcleo jugable implementado** (10 agentes, mundo textual de 12 lugares, memoria de cinco tipos, decisiones por reglas deterministas, consecuencias causales, SQLite + JSONL, CLI con biografías). Pendiente para cerrar 0.1: dashboard Streamlit, motor de decisión LLM y experimentos configurables en `src/vida/experiments/`.
+Estado: **VIDA-0.1, núcleo jugable implementado** (10 agentes, mundo textual de 12 lugares, memoria de cinco tipos, decisiones por reglas deterministas, consecuencias causales, SQLite + JSONL, CLI con biografías). Dashboard Streamlit en `dashboard/` (hecho). Pendiente para cerrar 0.1: motor de decisión LLM y experimentos configurables en `src/vida/experiments/`.
 
 Habla con el usuario en español. Identificadores, archivos y logs en inglés; docstrings, README, comentarios y textos de memoria/biografía en español.
 
@@ -18,9 +18,10 @@ Habla con el usuario en español. Identificadores, archivos y logs en inglés; d
 .venv\Scripts\python -m vida run --config config/default.yaml [--seed N] [--ticks N] [--run-id ID]
 .venv\Scripts\python -m vida runs                  # listar corridas en data/runs/
 .venv\Scripts\python -m vida life a01 --run <run_id> [--json]     # biografía de un agente
+.venv\Scripts\python -m streamlit run dashboard/app.py          # dashboard en http://localhost:8501
 ```
 
-Entorno: `.venv` creado con `python -m venv .venv && .venv\Scripts\pip install -e ".[dev]"`. Sin uv ni ruff instalados. Una corrida de 30 días con 10 agentes tarda ~45 s y genera ~7000 eventos.
+Entorno: `.venv` creado con `python -m venv .venv && .venv\Scripts\pip install -e ".[dev,dashboard]"`. Sin uv ni ruff instalados. Una corrida de 30 días con 10 agentes tarda ~45 s y genera ~7000 eventos.
 
 Git: el repositorio de VIDA vive en esta carpeta, pero `C:\Users\Montoya\Documents` (el padre) también es un repo con cientos de archivos ajenos. Ejecuta git siempre desde `VIDA/` y añade rutas explícitas.
 
@@ -46,6 +47,7 @@ Por agente, en orden barajado con semilla: `World.perceive` → `learning.observ
 - Parámetros de corrida: sólo en `config/default.yaml` + `simulation/config.py` (el hash de config forma parte de la reproducibilidad).
 - Mundo o población inicial: `world/presets.py` (`village_small`, `spawn_agents`, `COMMON_KNOWLEDGE`).
 - Persistencia: `database/models.py` guarda JSON completo por evento/memoria/estado; consultas en `database/repository.py`. Biografías en `evaluation/biography.py`.
+- Dashboard: `dashboard/data.py` aplana la SQLite a DataFrames (cacheado por mtime), `dashboard/charts.py` construye las figuras Plotly con la paleta categórica fija (8 tonos; las 11 acciones se pliegan en 8 familias en `ACTION_GROUPS`), `dashboard/app.py` es la UI. Se usa un `st.radio` en la barra lateral en lugar de `st.tabs` porque las pestañas renderizan todo a la vez y la página se vuelve inusable. Streamlit recarga `app.py` al guardar pero no los módulos importados: reinicia el servidor tras tocar `charts.py` o `data.py`. Tests con `streamlit.testing.v1.AppTest` en `tests/test_dashboard.py`.
 
 ## Tests
 

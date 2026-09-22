@@ -20,6 +20,11 @@ dependencies = [
 dev = [
     "pytest>=8",
 ]
+dashboard = [
+    "streamlit>=1.35",
+    "plotly>=5.20",
+    "pandas>=2.0",
+]
 
 [project.scripts]
 vida = "vida.cli:main"

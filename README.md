@@ -34,6 +34,20 @@ python -m vida runs                                   # listar corridas
 python -m vida life a01 --run <run_id>                # biografía de un agente (añade --json para datos)
 ```
 
+## Dashboard
+
+```bash
+.venv\Scripts\pip install -e ".[dashboard]"          # streamlit, plotly, pandas (una sola vez)
+.venv\Scripts\python -m streamlit run dashboard/app.py
+```
+
+Abre `http://localhost:8501`. En la barra lateral eliges corrida, agente y vista:
+
+- **Corrida**: agentes vivos, necesidades medias de la población (con las escaseces marcadas), qué hizo cada agente y eventos del mundo.
+- **Agente**: identidad observada, necesidades suavizadas, acciones por día, dinero, relaciones (final y evolución de la confianza), preferencias aprendidas, habilidades, valores, memorias filtrables y la biografía completa.
+- **Sociedad**: mapas de calor de confianza y familiaridad entre todos, dónde pasan el día, existencias reales del mundo y el registro de verdad/mentira/omisión de cada agente.
+- **Eventos**: tabla filtrable por agente, acción, resultado y rango de días.
+
 Cada corrida deja `data/runs/<run_id>/vida.sqlite` (eventos, memorias, snapshots de estado, relaciones) y `logs/<run_id>/events.jsonl` (una línea por evento). El resumen incluye el hash SHA-256 de los eventos: dos corridas con la misma semilla y configuración producen el mismo hash.
 
 Ejemplo de biografía (fragmento real de la corrida de aceptación):
