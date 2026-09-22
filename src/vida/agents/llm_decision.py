@@ -19,6 +19,8 @@ import json
 import logging
 import random
 import sqlite3
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any, Literal
 
@@ -103,10 +105,11 @@ class LLMCache:
 
 
 class LLMEngine:
-    name = "llm_v1"
+    name = "llm_v1"  # se especializa por proveedor en __init__: llm_v1:anthropic | llm_v1:ollama
 
     def __init__(self, cfg: DecisionSection, *, client: Any | None = None, cache: LLMCache | None = None) -> None:
         self.cfg: LLMSection = cfg.llm
+        self.name = f"llm_v1:{self.cfg.provider}"
         self.rules = RuleBasedEngine(cfg)
         self._client = client
         self.cache = cache if cache is not None else (LLMCache(self.cfg.cache_path) if self.cfg.cache_path else None)
@@ -129,6 +132,8 @@ class LLMEngine:
         return self.llm_agents is None or agent_id in self.llm_agents
 
     def estimated_cost_usd(self) -> float:
+        if self.cfg.provider == "ollama":
+            return 0.0  # modelo local: sin costo por token
         price_in, price_out = PRICES_PER_MTOK.get(self.cfg.model, (5.0, 25.0))
         return round((self.stats["input_tokens"] * price_in + self.stats["output_tokens"] * price_out) / 1e6, 4)
 
@@ -136,7 +141,7 @@ class LLMEngine:
     def _ask(self, prompt: str, schema_model: type[BaseModel]) -> BaseModel | None:
         schema = schema_model.model_json_schema()
         schema["additionalProperties"] = False
-        key = LLMCache.key_for(self.cfg.model, SYSTEM_PROMPT, prompt, schema)
+        key = LLMCache.key_for(f"{self.cfg.provider}/{self.cfg.model}", SYSTEM_PROMPT, prompt, schema)
         text = self.cache.get(key) if self.cache else None
         from_cache = text is not None
         if from_cache:
@@ -156,6 +161,52 @@ class LLMEngine:
         return parsed
 
     def _call_api(self, prompt: str, schema: dict[str, Any]) -> str | None:
+        if self.cfg.provider == "ollama":
+            return self._call_ollama(prompt, schema)
+        return self._call_anthropic(prompt, schema)
+
+    # --- proveedor Ollama (local, gratuito) --------------------------------
+    def _post_json(self, url: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """POST JSON con urllib (sin dependencias). Se puede sustituir en tests."""
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=self.cfg.timeout_seconds) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    def _call_ollama(self, prompt: str, schema: dict[str, Any]) -> str | None:
+        base = (self.cfg.base_url or "http://localhost:11434").rstrip("/")
+        seed = int.from_bytes(hashlib.sha256(prompt.encode("utf-8")).digest()[:4], "big")
+        # Modo JSON simple en lugar de gramática por esquema: la gramática de llama.cpp falla con
+        # claves como "move@market". El formato se describe en el prompt y se valida con pydantic.
+        example = {name: f"<{name}>" for name in schema.get("properties", {})}
+        user = f"{prompt}\n\nResponde SOLO con JSON exactamente así: {json.dumps(example, ensure_ascii=False)}"
+        options: dict[str, Any] = {"temperature": 0, "seed": seed, "num_predict": self.cfg.max_tokens}
+        if self.cfg.num_gpu is not None:
+            options["num_gpu"] = self.cfg.num_gpu
+        payload = {
+            "model": self.cfg.model, "stream": False, "format": "json",
+            "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": user}],
+            "options": options,
+        }
+        self.stats["calls"] += 1
+        try:
+            data = self._post_json(f"{base}/api/chat", payload)
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", "replace")[:200] if exc.fp else ""
+            log.warning("Ollama respondió HTTP %s: %s; se usa el motor por reglas", exc.code, body)
+            return None
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            log.warning("No se pudo contactar a Ollama en %s (%s); se usa el motor por reglas", base, exc)
+            return None
+        except ValueError as exc:
+            log.warning("Respuesta de Ollama no es JSON (%s); se usa el motor por reglas", exc)
+            return None
+        self.stats["input_tokens"] += int(data.get("prompt_eval_count") or 0)
+        self.stats["output_tokens"] += int(data.get("eval_count") or 0)
+        return (data.get("message") or {}).get("content")
+
+    # --- proveedor Anthropic -----------------------------------------------
+    def _call_anthropic(self, prompt: str, schema: dict[str, Any]) -> str | None:
         import anthropic
 
         output_config: dict[str, Any] = {"format": {"type": "json_schema", "schema": schema}}

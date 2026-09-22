@@ -51,11 +51,14 @@ def cmd_run(args: argparse.Namespace) -> int:
         cfg.run.ticks = args.ticks
     if args.engine:
         cfg.decision.engine = args.engine
+    if args.llm_provider:
+        cfg.decision.llm.provider = args.llm_provider
     if args.llm_model:
         cfg.decision.llm.model = args.llm_model
     if args.llm_agents:
         cfg.decision.llm.agents = [a.strip() for a in args.llm_agents.split(",") if a.strip()]
-    if cfg.decision.engine == "llm_v1" and not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
+    if cfg.decision.engine == "llm_v1" and cfg.decision.llm.provider == "anthropic" and not (
+            os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
         print("Aviso: no hay ANTHROPIC_API_KEY en el entorno ni en .env; el motor LLM sólo funcionará con respuestas en caché "
               "y recurrirá a las reglas en el resto.", file=sys.stderr)
     run_id = args.run_id or make_run_id(cfg.run.seed)
@@ -66,7 +69,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     llm_txt = ""
     if cfg.decision.engine == "llm_v1":
         who = ", ".join(cfg.decision.llm.agents) if cfg.decision.llm.agents else "todos los agentes"
-        llm_txt = f" · LLM {cfg.decision.llm.model} para {who}"
+        llm_txt = f" · LLM {cfg.decision.llm.provider}/{cfg.decision.llm.model} para {who}"
     print(f"VIDA {__version__} · corrida {run_id} · semilla {cfg.run.seed} · {cfg.run.ticks} ticks "
           f"({cfg.run.ticks // cfg.run.ticks_per_day} días) · {cfg.agents.n_agents} agentes · motor {cfg.decision.engine}{llm_txt}")
     summary = engine.run()
@@ -147,7 +150,8 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--log-dir", default=str(DEFAULT_LOG_DIR))
     run.add_argument("--json", action="store_true", help="imprimir el resumen como JSON")
     run.add_argument("--engine", choices=["rules_v1", "llm_v1"], help="motor de decisión (sobrescribe la config)")
-    run.add_argument("--llm-model", help="modelo para llm_v1, p. ej. claude-opus-5 o claude-haiku-4-5")
+    run.add_argument("--llm-provider", choices=["anthropic", "ollama"], help="anthropic (API de Claude) u ollama (modelo local gratuito)")
+    run.add_argument("--llm-model", help="modelo para llm_v1, p. ej. claude-opus-5, claude-haiku-4-5 o llama3.2")
     run.add_argument("--llm-agents", help="agentes que deciden con el LLM, separados por coma (los demás usan reglas)")
     run.set_defaults(func=cmd_run)
 

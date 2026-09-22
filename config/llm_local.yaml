@@ -1,0 +1,56 @@
+# Corrida con un LLM local y gratuito (Ollama en http://localhost:11434) para dos agentes.
+# Requiere Ollama abierto y el modelo descargado: `ollama pull llama3.2` (2 GB, cabe holgado en 16 GB de RAM).
+# Sin costo por token. En CPU cada decisión tarda varios segundos; 2 agentes × 240 ticks son unas 480 decisiones.
+# Las respuestas se cachean en data/llm_cache.sqlite, así que repetir la corrida con la misma semilla es inmediato.
+
+run:
+  seed: 42
+  ticks: 240            # 10 días
+  ticks_per_day: 24
+  snapshot_every_ticks: 24
+
+world:
+  preset: village_small
+
+agents:
+  n_agents: 10
+  initial_age_days: { min: 20, max: 40 }
+  starting_money: 20.0
+
+needs:
+  hunger:    { decay_per_tick: 0.030, critical_below: 0.10 }
+  energy:    { decay_per_tick: 0.025, critical_below: 0.10 }
+  health:    { decay_per_tick: 0.002, critical_below: 0.10 }
+  social:    { decay_per_tick: 0.015, critical_below: 0.10 }
+  safety:    { decay_per_tick: 0.005, critical_below: 0.10 }
+  knowledge: { decay_per_tick: 0.001, critical_below: 0.10 }
+
+lifecycle:
+  stage_thresholds_days: { adolescence: 12, youth: 18, adulthood: 30, old_age: 65 }
+  max_age_days: 85
+  critical_ticks: 12
+  old_age_health_factor: 3.0
+
+memory:
+  retrieve_k: 8
+  weights: { recency: 1.0, importance: 1.0, relevance: 1.0 }
+  recency_decay: 0.99
+  forget_below: 0.2
+  forget_after_days: 7
+
+decision:
+  engine: llm_v1
+  epsilon: 0.01
+  llm:
+    provider: ollama
+    base_url: http://localhost:11434
+    num_gpu: 0                  # CPU: la GPU AMD de este equipo genera texto corrupto con Vulkan
+    model: llama3.2
+    effort: null
+    max_tokens: 256
+    agents: [a01, a06]          # Ana y Diego deciden con el LLM local; el resto por reglas
+    cache_path: data/llm_cache.sqlite
+    fallback_to_rules: true
+    include_heuristic_scores: false
+    max_memories: 6
+    timeout_seconds: 120

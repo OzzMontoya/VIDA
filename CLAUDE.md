@@ -19,17 +19,22 @@ Habla con el usuario en español. Identificadores, archivos y logs en inglés; d
 .venv\Scripts\python -m vida runs                  # listar corridas en data/runs/
 .venv\Scripts\python -m vida life a01 --run <run_id> [--json]     # biografía de un agente
 .venv\Scripts\python -m streamlit run dashboard/app.py          # dashboard en http://localhost:8501
-.venv\Scripts\python -m vida run --config config/llm.yaml         # motor LLM (requiere ANTHROPIC_API_KEY en .env)
+.venv\Scripts\python -m vida run --config config/llm.yaml         # motor LLM con Claude (requiere ANTHROPIC_API_KEY en .env)
+.venv\Scripts\python -m vida run --config config/llm_local.yaml   # motor LLM local gratuito (Ollama + llama3.2)
 ```
 
 Entorno: `.venv` creado con `python -m venv .venv && .venv\Scripts\pip install -e ".[dev,dashboard]"`. Sin uv ni ruff instalados. Una corrida de 30 días con 10 agentes tarda ~45 s y genera ~7000 eventos.
 
 Git: el repositorio de VIDA vive en esta carpeta, pero `C:\Users\Montoya\Documents` (el padre) también es un repo con cientos de archivos ajenos. Ejecuta git siempre desde `VIDA/` y añade rutas explícitas.
 
+## Objetivos de investigación del usuario
+
+En `docs/objetivos.md`: (1) ¿puede existir consciencia artificial?, (2) qué constituye su identidad y continuidad, (3) si la continuidad se mantiene al cambiar de soporte, (4) preservación indefinida de una mente consciente. Presenta el trabajo técnico como pasos hacia esas preguntas sin romper el principio 5 (el código nunca afirma consciencia).
+
 ## Principios de arquitectura (no negociables, del documento)
 
 1. **El simulador es la autoridad.** `WorldState` (`world/world.py`) es la verdad; `WorldModel` (`agents/beliefs.py`) es lo que el agente cree. Sólo `World.resolve` (vía `world/rules.py`) muta el mundo.
-2. **El motor de decisión propone; el mundo resuelve.** `DecisionEngine.decide` devuelve una `ActionProposal`; `World.resolve` devuelve el `ActionOutcome` objetivo. `RuleBasedEngine` (`rules_v1`) y `LLMEngine` (`llm_v1`, `agents/llm_decision.py`) implementan el mismo `Protocol`. El LLM sólo elige entre `RuleBasedEngine.candidates(ctx)` (acciones legales expandidas); una elección inválida, un error de API o una negativa de seguridad degradan a reglas y lo marcan en `DecisionRecord.engine`. Modelo por defecto `claude-opus-5` con `output_config` (JSON schema + effort low) y `fallbacks="default"` del servidor (beta); respuestas cacheadas en `data/llm_cache.sqlite` por hash del prompt, lo que mantiene la reproducibilidad al repetir una corrida. Tests sin red con un cliente falso en `tests/test_llm_decision.py`. Nunca uses `random` ni tokens de conversación para decidir: todo pasa por `DecisionContext`.
+2. **El motor de decisión propone; el mundo resuelve.** `DecisionEngine.decide` devuelve una `ActionProposal`; `World.resolve` devuelve el `ActionOutcome` objetivo. `RuleBasedEngine` (`rules_v1`) y `LLMEngine` (`llm_v1`, `agents/llm_decision.py`) implementan el mismo `Protocol`. El LLM sólo elige entre `RuleBasedEngine.candidates(ctx)` (acciones legales expandidas); una elección inválida, un error de API o una negativa de seguridad degradan a reglas y lo marcan en `DecisionRecord.engine`. Dos proveedores: `anthropic` (modelo por defecto `claude-opus-5`, con `output_config` (JSON schema + effort low) y `fallbacks="default"` del servidor (beta); y `ollama` (local y gratuito, `config/llm_local.yaml`; modo `format: json` porque la gramática por esquema de llama.cpp falla con `@` en las claves, y `num_gpu: 0` porque la GPU AMD R7 M360 de este PC genera texto corrupto vía Vulkan; ~35 s por decisión en CPU con `llama3.2`). Respuestas cacheadas en `data/llm_cache.sqlite` por hash de proveedor+modelo+prompt, lo que mantiene la reproducibilidad al repetir una corrida. Tests sin red con un cliente falso en `tests/test_llm_decision.py`. Nunca uses `random` ni tokens de conversación para decidir: todo pasa por `DecisionContext`.
 3. **Las relaciones cambian por resultados, no por palabras.** `agents/social.py` y `agents/learning.py` sólo leen `ActionOutcome`; nunca `proposal.rationale` ni `details["_world"]`. La clave `_world` guarda lo que sólo el mundo sabe (si una respuesta fue mentira) y alimenta reputación y evaluación.
 4. **Reproducibilidad.** Todo azar sale de `RngHub.sub(...)` (`simulation/rng.py`); nunca `random` global. Nada depende del orden de iteración de un `set` (usar `sorted`). El hash de eventos excluye `run_id`, así dos corridas con la misma semilla dan hash idéntico (`tests/test_determinism.py`).
 5. **Lenguaje científico.** Nada en código, logs, memorias ni biografías afirma conciencia o sentimientos; se describen conductas observadas.

@@ -47,6 +47,20 @@ El LLM recibe la ficha del agente, su percepción, sus creencias (que pueden ser
 
 Costo orientativo con `claude-opus-5`: unos 1.700 tokens de entrada y 60 de salida por decisión, cerca de 1 centavo de dólar cada una. Una corrida de 30 días con los 10 agentes son ~7.200 decisiones, unos 70 dólares; con `claude-haiku-4-5` unos 14. Por eso `config/llm.yaml` limita el LLM a dos agentes y 10 días (unos 5 dólares). El resumen de cada corrida imprime llamadas, aciertos de caché, tokens y costo estimado.
 
+### LLM local y gratuito (Ollama)
+
+```bash
+ollama pull llama3.2                                       # 2 GB, una sola vez
+.venv\Scripts\python -m vida run --config config/llm_local.yaml
+.venv\Scripts\python -m vida run --engine llm_v1 --llm-provider ollama --llm-model llama3.1 --llm-agents a01 --ticks 48
+```
+
+Sin costo por token. En este equipo (CPU, la GPU AMD vía Vulkan produce texto corrupto y por eso `num_gpu: 0`) cada decisión tarda unos 35 s con `llama3.2`; 2 agentes durante 10 días son ~5 horas. La caché hace que repetir la corrida sea inmediato. En la prueba real de 12 ticks, Ana eligió acciones válidas en todas las decisiones y sus justificaciones fueron coherentes con sus necesidades y relaciones.
+
+## Objetivos de investigación
+
+Ver `docs/objetivos.md`: consciencia artificial → identidad y continuidad → continuidad al cambiar de soporte → preservación indefinida. VIDA-0.1 construye el objeto experimental; no responde ninguna de esas preguntas todavía.
+
 ## Dashboard
 
 ```bash

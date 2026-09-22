@@ -68,7 +68,7 @@ def test_llm_choice_is_taken_when_valid(small_world, small_cfg, tmp_path):
     engine = LLMEngine(cfg.decision, client=client)
     proposal, record = engine.decide(_ctx(world, agents, cfg, "a01"), hub.sub("d"))
     assert proposal.kind == "move" and proposal.target_location == "market"
-    assert record.engine == "llm_v1" and record.chosen == "move@market"
+    assert record.engine == "llm_v1:anthropic" and record.chosen == "move@market"
     assert proposal.rationale == "tengo hambre y quiero comprar pan"
     request = client.messages.requests[0]
     assert request["model"] == "claude-opus-5"
@@ -93,7 +93,7 @@ def test_invalid_choice_refusal_and_api_errors_fall_back_to_rules(small_world, s
     for _ in range(4):
         proposal, record = engine.decide(_ctx(world, agents, cfg, "a01"), hub.sub("d"))
         assert proposal.kind in {"rest", "move", "idle"}
-        assert record.engine == "llm_v1/fallback:rules_v1"
+        assert record.engine == "llm_v1:anthropic/fallback:rules_v1"
     assert engine.stats["fallbacks"] == 4 and engine.stats["refusals"] == 1 and engine.stats["invalid"] == 1
 
 
@@ -112,7 +112,7 @@ def test_only_listed_agents_use_llm(small_world, small_cfg, tmp_path):
     engine = LLMEngine(cfg.decision, client=client)
     _, r1 = engine.decide(_ctx(world, agents, cfg, "a01"), hub.sub("d"))
     _, r2 = engine.decide(_ctx(world, agents, cfg, "a02"), hub.sub("d"))
-    assert r1.engine == "rules_v1" and r2.engine == "llm_v1"
+    assert r1.engine == "rules_v1" and r2.engine == "llm_v1:anthropic"
     assert len(client.messages.requests) == 1
 
 
@@ -124,7 +124,7 @@ def test_cache_replays_without_calling_api(small_world, small_cfg, tmp_path):
     p1, _ = engine.decide(_ctx(world, agents, cfg, "a01"), hub.sub("d"))
     engine2 = LLMEngine(cfg.decision, client=FakeClient([]), cache=cache)  # sin respuestas: sólo puede usar la caché
     p2, r2 = engine2.decide(_ctx(world, agents, cfg, "a01"), hub.sub("d"))
-    assert p1.key() == p2.key() == "rest" and r2.engine == "llm_v1"
+    assert p1.key() == p2.key() == "rest" and r2.engine == "llm_v1:anthropic"
     assert engine2.stats["cache_hits"] == 1 and engine2.stats["calls"] == 0
 
 
@@ -149,12 +149,40 @@ def test_reply_and_share_are_validated_against_known_locations(small_world, smal
 
 def test_build_engine_and_full_run_with_fake_llm(small_cfg, tmp_path):
     cfg = _llm_cfg(small_cfg, tmp_path, agents=["a01"])
-    assert build_engine(cfg.decision).name == "llm_v1"
+    assert build_engine(cfg.decision).name == "llm_v1:anthropic"
     engine = LLMEngine(cfg.decision, client=FakeClient([]))  # todo recurre a reglas
     sim = SimulationEngine(cfg, run_id="llm_test", decision_engine=engine, sha="test")
     summary = sim.run(ticks=24)
-    assert summary.decision_engine == "llm_v1"
+    assert summary.decision_engine == "llm_v1:anthropic"
     assert summary.llm_stats["calls"] == 24 and summary.llm_stats["fallbacks"] == 24
     assert summary.llm_cost_usd > 0.0  # el cliente simulado reporta tokens aunque la elección sea inválida
     engines = {e.decision.engine for e in sim.events if e.decision}
-    assert engines == {"rules_v1", "llm_v1/fallback:rules_v1"}
+    assert engines == {"rules_v1", "llm_v1:anthropic/fallback:rules_v1"}
+
+
+def test_ollama_provider_uses_local_api_and_costs_nothing(small_world, small_cfg, tmp_path):
+    world, agents, hub = small_world
+    cfg = _llm_cfg(small_cfg, tmp_path, provider="ollama", model="llama3.2", cache_path=None)
+    engine = LLMEngine(cfg.decision)
+    posted = []
+
+    def fake_post(url, payload):
+        posted.append((url, payload))
+        return {"message": {"content": json.dumps({"choice": "rest", "rationale": "descanso local"})},
+                "prompt_eval_count": 900, "eval_count": 20}
+
+    engine._post_json = fake_post
+    proposal, record = engine.decide(_ctx(world, agents, cfg, "a01"), hub.sub("d"))
+    assert proposal.kind == "rest" and record.engine == "llm_v1:ollama"
+    url, payload = posted[0]
+    assert url == "http://localhost:11434/api/chat" and payload["model"] == "llama3.2"
+    assert payload["format"] == "json" and payload["options"]["temperature"] == 0 and payload["options"]["num_gpu"] == 0
+    assert "Responde SOLO con JSON" in payload["messages"][1]["content"]
+    assert engine.stats["input_tokens"] == 900 and engine.estimated_cost_usd() == 0.0
+
+    def failing_post(url, payload):
+        raise OSError("connection refused")
+
+    engine._post_json = failing_post
+    _, record = engine.decide(_ctx(world, agents, cfg, "a01"), hub.sub("d"))
+    assert record.engine == "llm_v1:ollama/fallback:rules_v1"

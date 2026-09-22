@@ -84,8 +84,11 @@ class LLMSection(BaseModel):
     prompt para poder repetir una corrida sin volver a llamar a la API.
     """
 
+    provider: Literal["anthropic", "ollama"] = "anthropic"  # ollama = modelo local gratuito (http://localhost:11434)
+    base_url: str | None = None  # para ollama; por defecto http://localhost:11434
+    num_gpu: int | None = 0  # ollama: capas en GPU; 0 fuerza CPU (las GPU AMD viejas vía Vulkan generan texto corrupto)
     model: str = "claude-opus-5"
-    effort: str | None = "low"  # low | medium | high | xhigh | max; None omite el parámetro
+    effort: str | None = "low"  # low | medium | high | xhigh | max; None omite el parámetro (sólo anthropic)
     max_tokens: int = 1024
     agents: list[str] | None = None
     cache_path: str | None = "data/llm_cache.sqlite"
