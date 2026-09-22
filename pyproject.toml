@@ -25,6 +25,9 @@ dashboard = [
     "plotly>=5.20",
     "pandas>=2.0",
 ]
+llm = [
+    "anthropic>=1.0",
+]
 
 [project.scripts]
 vida = "vida.cli:main"
