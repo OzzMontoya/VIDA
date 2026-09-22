@@ -206,6 +206,35 @@ def occupancy_by_type(data: RunData) -> pd.DataFrame:
     return occ
 
 
+def lineage_frame(data: RunData) -> pd.DataFrame:
+    """Una fila por hijo con su progenitor, generación, supervivencia e ICI frente al progenitor y a los demás."""
+    from vida.evaluation.lineage import lineage_report
+    from vida.memory.base import AgentMemory
+
+    memories: dict[str, AgentMemory] = {}
+    for aid in data.final_states:
+        mem = AgentMemory(aid, data.config.memory)
+        sub = data.memories[(data.memories["agent_id"] == aid) & (~data.memories["forgotten"])] if not data.memories.empty else data.memories
+        for _, row in sub.iterrows():
+            from vida.memory.base import MemoryRecord
+            mem.records[row["memory_id"]] = MemoryRecord(
+                id=row["memory_id"], agent_id=aid, kind=row["kind"], tick=int(row["tick"]), content=row["content"],
+                importance=float(row["importance"]), valence=float(row["valence"]),
+                tags=[t for t in str(row.get("tags", "")).split(", ") if t], access_count=int(row.get("access_count", 0)),
+            )
+        memories[aid] = mem
+    from vida.database.repository import RunRepository
+    events: list = []
+    report = lineage_report(data.final_states, memories, events)
+    rows = report["rows"]
+    if not rows:
+        return pd.DataFrame(columns=["child", "parent", "generation", "alive", "ici_parent", "ici_others"])
+    df = pd.DataFrame(rows)
+    df["child_name"] = df["child"].map(data.names)
+    df["parent_name"] = df["parent"].map(data.names)
+    return df
+
+
 def deception_summary(data: RunData) -> pd.DataFrame:
     """Intención registrada por el mundo en respuestas e información compartida, por agente."""
     ev = data.events

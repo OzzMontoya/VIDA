@@ -22,7 +22,7 @@ for p in (ROOT, ROOT / "src"):
 
 from dashboard import charts  # noqa: E402
 from dashboard.data import (  # noqa: E402
-    ACTION_GROUP_ORDER, MEMORY_KIND_LABELS, NEED_ORDER, RunData, alive_per_tick, deception_summary, list_runs,
+    ACTION_GROUP_ORDER, MEMORY_KIND_LABELS, NEED_ORDER, RunData, alive_per_tick, deception_summary, lineage_frame, list_runs,
     load_run, occupancy_by_type,
 )
 from vida.database.repository import RunRepository  # noqa: E402
@@ -102,7 +102,7 @@ c3.metric("Días simulados", data.n_days)
 c4.metric("Eventos", f"{int(data.meta.get('n_events') or len(data.events)):,}")
 c5.metric("Memorias", f"{len(data.memories):,}")
 
-VIEWS = ["🌍 Corrida", "🧍 Agente", "🤝 Sociedad", "📋 Eventos"]
+VIEWS = ["🌍 Corrida", "🧍 Agente", "🤝 Sociedad", "🌳 Linaje", "📋 Eventos"]
 # Un selector en lugar de pestañas: Streamlit renderiza todas las pestañas a la vez y la página se vuelve pesada.
 view = st.sidebar.radio("Vista", VIEWS, key="view")
 st.sidebar.caption("El agente elegido arriba se usa en la vista Agente y como filtro inicial en Eventos.")
@@ -241,8 +241,34 @@ if view == VIEWS[2]:
             st.caption("Intención registrada por el mundo (libro de información). Los agentes no la conocen: "
                        "sólo descubren un engaño cuando actúan sobre la información y fracasan.")
 
-# --- eventos -------------------------------------------------------------------
+# --- linaje --------------------------------------------------------------------
 if view == VIEWS[3]:
+    st.subheader("Generaciones y transmisión")
+    show(charts.generation_bars(data.agents, data.final_states))
+    births = data.events[data.events["event_type"] == "birth"]
+    if births.empty:
+        st.info("No hubo nacimientos en esta corrida.")
+    else:
+        lin = lineage_frame(data)
+        if not lin.empty:
+            closer = int((lin["ici_parent"] > lin["ici_others"].fillna(0)).sum())
+            st.caption(f"{len(lin)} hijos · {closer} más parecidos a su progenitor que a los demás adultos de la generación anterior · "
+                       f"ICI medio con progenitor {lin['ici_parent'].mean():.3f}, con otros {lin['ici_others'].mean():.3f}. "
+                       "El ICI es una semejanza entre estados; no mide conciencia. Aquí no se compara la dimensión de decisiones (requiere los eventos completos: usa `vida lineage`).")
+            show(charts.lineage_similarity(lin))
+            st.dataframe(lin[["child_name", "parent_name", "generation", "alive", "ici_parent", "ici_others",
+                              "personality_parent", "preferences_parent", "beliefs_from_parent_remaining", "trust_in_parent"]]
+                         .rename(columns={"child_name": "hijo", "parent_name": "progenitor", "generation": "generación", "alive": "vivo",
+                                          "ici_parent": "ICI progenitor", "ici_others": "ICI otros", "personality_parent": "personalidad",
+                                          "preferences_parent": "preferencias",
+                                          "beliefs_from_parent_remaining": "creencias heredadas", "trust_in_parent": "confianza en progenitor"}).round(3),
+                         hide_index=True, width="stretch")
+        st.markdown("**Nacimientos**")
+        st.dataframe(births[["day", "agent_id", "note"]].assign(nombre=births["agent_id"].map(names))
+                     .rename(columns={"day": "día", "agent_id": "id", "note": "detalle"}), hide_index=True, width="stretch")
+
+# --- eventos -------------------------------------------------------------------
+if view == VIEWS[4]:
     f1, f2, f3, f4 = st.columns([2, 2, 2, 3])
     sel_agents = f1.multiselect("Agentes", ids, default=[agent_id], format_func=lambda a: f"{names[a]} ({a})")
     sel_actions = f2.multiselect("Acciones", sorted(data.events["action"].dropna().unique()))

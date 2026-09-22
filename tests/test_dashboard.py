@@ -46,7 +46,7 @@ def test_data_layer_loads_run(run_dir):
     assert not data.resources.empty and data.resources["stock"].min() >= 0
 
 
-@pytest.mark.parametrize("view", ["🌍 Corrida", "🧍 Agente", "🤝 Sociedad", "📋 Eventos"])
+@pytest.mark.parametrize("view", ["🌍 Corrida", "🧍 Agente", "🤝 Sociedad", "🌳 Linaje", "📋 Eventos"])
 def test_every_view_renders_without_errors(run_dir, view):
     at = AppTest.from_file(str(ROOT / "dashboard" / "app.py"), default_timeout=120)
     at.run()

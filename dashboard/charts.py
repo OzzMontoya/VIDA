@@ -242,3 +242,36 @@ def deception_bars(summary: pd.DataFrame, names: dict[str, str]) -> go.Figure:
     fig.update_layout(barmode="stack")
     base_layout(fig, "Respuestas e información compartida, por agente", y_title="mensajes")
     return fig
+
+
+def generation_bars(agents: pd.DataFrame, final_states: dict) -> go.Figure:
+    """Agentes por generación, vivos y muertos apilados."""
+    gen = pd.Series({aid: st.generation for aid, st in final_states.items()})
+    alive = pd.Series({aid: st.alive for aid, st in final_states.items()})
+    counts = pd.DataFrame({"gen": gen, "alive": alive}).groupby(["gen", "alive"]).size().unstack(fill_value=0)
+    fig = go.Figure()
+    for flag, label, color in ((True, "vivos", SEQUENTIAL_BLUE[4]), (False, "muertos", SEQUENTIAL_BLUE[1])):
+        if flag in counts.columns:
+            fig.add_trace(go.Bar(name=label, x=[f"gen {g}" for g in counts.index], y=counts[flag],
+                                 marker={"color": color, "line": {"color": SURFACE, "width": 2}},
+                                 hovertemplate=f"{label}: %{{y}}<extra></extra>"))
+    fig.update_layout(barmode="stack")
+    base_layout(fig, "Agentes por generación", height=280, y_title="agentes")
+    return fig
+
+
+def lineage_similarity(df: pd.DataFrame) -> go.Figure:
+    """ICI de cada hijo con su progenitor frente a la media con los demás adultos de esa generación."""
+    labels = [f"{r.child_name} ← {r.parent_name}" for r in df.itertuples()]
+    fig = go.Figure()
+    fig.add_trace(go.Bar(name="con su progenitor", x=labels, y=df["ici_parent"],
+                         marker={"color": CATEGORICAL[0], "line": {"color": SURFACE, "width": 2}},
+                         hovertemplate="con progenitor: %{y:.3f}<extra></extra>"))
+    fig.add_trace(go.Bar(name="con los demás adultos", x=labels, y=df["ici_others"].fillna(0),
+                         marker={"color": CATEGORICAL[1], "line": {"color": SURFACE, "width": 2}},
+                         hovertemplate="con otros: %{y:.3f}<extra></extra>"))
+    fig.update_layout(barmode="group")
+    base_layout(fig, "Semejanza (ICI) de cada hijo: con su progenitor y con los demás", height=360, y_title="ICI")
+    fig.update_yaxes(range=[0, 1.05])
+    fig.update_xaxes(tickangle=-30)
+    return fig
