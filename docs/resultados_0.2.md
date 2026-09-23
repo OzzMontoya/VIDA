@@ -212,6 +212,19 @@ Observaciones:
 - **La ventaja del automodelo en conversar se triplica con la población** (+0.053): cuando hay cien personas, saber lo que uno tiene con cada una vale más de lo que la población puede decir. La información individual predictiva crece con la complejidad social. Es el resultado más claro hasta ahora a favor de que el criterio 1 escala.
 - Escala: 100 agentes × 30 días con base de datos corren en una PC sin GPU en unos 20 minutos; 1.000 agentes (fase 2) exigiría optimizar la recuperación de memoria y la persistencia.
 
+## 19. Integración: ¿la mente es más que la suma de sus partes? (a partir de las ablaciones de §16)
+
+| Dimensión del ICI | Suma de caídas al quitar cada componente por separado | Caída al quitar todo | Interacción |
+|---|---|---|---|
+| ICI total | 0.682 | 0.453 | **−0.229** |
+| memoria | 1.240 | 0.794 | −0.445 |
+| decisiones | 0.401 | 0.115 | −0.286 |
+| relaciones | 0.407 | 0.277 | −0.130 |
+| preferencias | 0.287 | 0.236 | −0.051 |
+| autorrepresentación | 1.352 | 0.502 | −0.850 |
+
+Interpretación: interacción negativa en todas las dimensiones, es decir, **redundancia**: quitar un componente lo compensan en parte los demás, y quitar todos cuesta menos que la suma. No hay sinergia ni información irreducible; la mente de un agente VIDA es un conjunto de módulos poco acoplados. Para las teorías que ligan la consciencia a la integración, este es un resultado negativo nítido, y también un diagnóstico de diseño: si algún día se quiere una mente integrada, los componentes deben depender unos de otros (la memoria que alimenta el automodelo, el automodelo que modula las relaciones, las relaciones que cambian lo que se recuerda), no solo sumar sus efectos en un puntaje.
+
 ## 15. Balance de VIDA-1.0 y lo que sigue
 
 Instrumentos disponibles: vidas completas con nacimiento, familia, vejez y muerte; linaje y transmisión medibles; automodelo con conocimiento privado; cinco experimentos reproducibles (memoria, entorno, engaño, decisión, transferencia) con tamaños de efecto. Cada corrección de este bloque salió de una muerte o de un cero inexplicable en una tabla, no de una suposición.
