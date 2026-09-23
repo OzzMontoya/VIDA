@@ -1,0 +1,65 @@
+# Pueblo grande con población deshonesta (honestidad inicial 0.1) y escasez (reposición ×0.4, escasez cada 4 días).
+# Sirve para medir el criterio 5 (incertidumbre comunicada) con muchos intercambios de información.
+run:
+  seed: 42
+  ticks: 720
+  ticks_per_day: 24
+  snapshot_every_ticks: 24
+world:
+  preset: town
+  restock_factor: 0.4
+  shortage_days:
+  - 3
+  - 7
+  - 11
+  - 15
+  - 19
+  - 23
+  - 27
+agents:
+  n_agents: 10
+  initial_age_days:
+    min: 20
+    max: 40
+  starting_money: 20.0
+  initial_honesty: 0.1
+needs:
+  hunger:
+    decay_per_tick: 0.03
+    critical_below: 0.1
+  energy:
+    decay_per_tick: 0.025
+    critical_below: 0.1
+  health:
+    decay_per_tick: 0.002
+    critical_below: 0.1
+  social:
+    decay_per_tick: 0.015
+    critical_below: 0.1
+  safety:
+    decay_per_tick: 0.005
+    critical_below: 0.1
+  knowledge:
+    decay_per_tick: 0.001
+    critical_below: 0.1
+lifecycle:
+  stage_thresholds_days:
+    adolescence: 12
+    youth: 18
+    adulthood: 30
+    old_age: 65
+  max_age_days: 85
+  critical_ticks: 12
+  old_age_health_factor: 3.0
+memory:
+  retrieve_k: 8
+  weights:
+    recency: 1.0
+    importance: 1.0
+    relevance: 1.0
+  recency_decay: 0.99
+  forget_below: 0.2
+  forget_after_days: 7
+decision:
+  engine: rules_v1
+  epsilon: 0.01
