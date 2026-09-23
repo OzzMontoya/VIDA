@@ -201,10 +201,16 @@ class SimulationEngine:
             if other_id in self.agents:
                 self.agents[other_id].apply_need_deltas(deltas)
 
-        # Memoria.
+        # Memoria. Acoplamientos: la sorpresa (error del automodelo) y el afecto por la otra persona
+        # elevan la importancia del episodio, que decide qué se recuerda y qué se olvida.
         created: list[str] = []
         rec = episodic.encode_outcome(memory, agent, outcome, event.event_id, self.names)
         if rec:
+            boost = self.cfg.memory.surprise_weight * own_err
+            if outcome.target_agent and outcome.target_agent in agent.relationships:
+                boost += self.cfg.memory.affection_weight * agent.relationships[outcome.target_agent].affection
+            if boost:
+                rec.importance = min(1.0, round(rec.importance + boost, 6))
             created.append(rec.id)
         rec = social_memory.encode_for_initiator(memory, outcome, event.event_id, self.names)
         if rec:

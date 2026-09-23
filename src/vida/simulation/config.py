@@ -92,6 +92,8 @@ class MemorySection(BaseModel):
     forget_below: float = 0.2
     forget_after_days: int = 7
     forget_kinds: list[str] = Field(default_factory=lambda: ["episodic"])  # tipos sujetos a olvido
+    surprise_weight: float = 0.5  # acoplamiento automodelo→memoria: el error de predicción sube la importancia del episodio
+    affection_weight: float = 0.3  # acoplamiento relaciones→memoria: los episodios con personas queridas importan más
 
 
 class LLMSection(BaseModel):

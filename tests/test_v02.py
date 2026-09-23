@@ -180,3 +180,25 @@ def test_selfmodel_analysis_and_cli(small_cfg, tmp_path, capsys):
     capsys.readouterr()
     assert main(["--data-dir", str(data), "selfmodel", "--run", "smcli"]) == 0
     assert "criterio 1" in capsys.readouterr().out
+
+
+def test_surprise_and_affection_raise_memory_importance(small_cfg):
+    cfg = small_cfg.model_copy(deep=True)
+    cfg.lifecycle.population_cap = 2
+    engine = SimulationEngine(cfg, run_id="couple", sha="test")
+    engine.run(ticks=72)
+    a = engine.agents["a01"]
+    a.relationships["a02"].affection = 1.0
+    ev = engine._agent_turn(a)
+    # cada episodio nuevo lleva al menos la sorpresa del automodelo o el afecto sumados a su importancia base
+    mems = [m for m in engine.memories["a01"].all() if m.id in ev.memories_created and m.kind == "episodic"]
+    if mems and ev.outcome.target_agent == "a02":
+        assert mems[0].importance >= 0.3
+    cfg2 = cfg.model_copy(deep=True)
+    cfg2.memory.surprise_weight = 0.0
+    cfg2.memory.affection_weight = 0.0
+    e2 = SimulationEngine(cfg2, run_id="couple0", sha="test")
+    e2.run(ticks=72)
+    mean_coupled = sum(m.importance for m in engine.memories["a01"].by_kind("episodic")) / max(1, len(engine.memories["a01"].by_kind("episodic")))
+    mean_plain = sum(m.importance for m in e2.memories["a01"].by_kind("episodic")) / max(1, len(e2.memories["a01"].by_kind("episodic")))
+    assert mean_coupled > mean_plain
