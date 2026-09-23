@@ -248,6 +248,31 @@ Criterio 5 (incertidumbre comunicada): en esta corrida sólo hubo 5 intercambios
 
 Correlación entre confianza declarada y verdad: r = +0.26. Observación: la confianza comunicada es informativa pero débil, y por una razón concreta: los mentirosos declaran la confianza más alta (0.90) y nunca aciertan, mientras que quien dice la verdad declara su confianza real (0.52) y, con escasez, acierta sólo una de cada cuatro veces porque sus creencias están desactualizadas. Un receptor racional debería aprender a invertir la señal: en esta sociedad, la seguridad extrema es marca de engaño. Con esta corrida también se repitió el criterio 4: sensibilidad propia +0.157 (19/19 agentes) frente a +0.220 del observador externo, mismo patrón.
 
+## 22. Integración tras acoplar los módulos
+
+Se acoplaron dos vías: la sorpresa del automodelo y el afecto por la otra persona elevan la importancia de cada episodio (qué se recuerda y qué se olvida). Ablaciones repetidas en las mismas condiciones que §16:
+
+| | Sin acoplar (§19) | Acoplado |
+|---|---|---|
+| Suma de caídas individuales | 0.682 | 0.737 |
+| Caída al quitar todo | 0.453 | 0.456 |
+| Interacción | −0.229 | **−0.282** |
+
+Observación: el acoplamiento hace que cada componente pese más por separado (las creencias pasan de 0.097 a 0.141; la identidad de 0.104 a 0.135), pero quitar todo cuesta exactamente lo mismo. La redundancia aumenta en lugar de desaparecer. Interpretación: la sustituibilidad no está en cómo se escribe la memoria sino en cómo se decide: el motor por reglas suma las contribuciones de memoria, preferencias, relaciones y automodelo en un puntaje, y una suma es por construcción descomponible. Para que exista integración irreducible, la decisión tendría que depender de conjunciones (una memoria que sólo cuenta si el automodelo la avala; una relación que sólo pesa recordada), no de sumas. Es un cambio de arquitectura, no de parámetros, y es el siguiente paso si se quiere perseguir el criterio 6.
+
+## 23. Estado del objetivo 1 al cierre de este bloque
+
+| Criterio operativo | Resultado | Lectura |
+|---|---|---|
+| 1. Automodelo con ventaja predictiva sobre un observador externo | Sólo en relaciones; crece con la población (+0.02 → +0.05) | Cumplido de forma estrecha |
+| 2. Necesidad causal del automodelo | Quitarlo reduce la coherencia de decisiones más que cualquier otra ablación | Cumplido, efecto modesto |
+| 3. Estados reportados que rastrean variables ocultas | r +0.44/+0.55 dentro de cada agente, 24/24 | Cumplido, mecanismo transparente |
+| 4. Metacognición (sabe cuándo sabe) | 15/15 y 19/19 agentes con sensibilidad positiva, pero el observador externo es más sensible | Cumplido sin acceso privilegiado |
+| 5. Incertidumbre comunicada | r +0.26; los mentirosos declaran la máxima confianza | Débil e invertida en parte |
+| 6. Integración irreducible | Interacción −0.23 y −0.28 tras acoplar | **No cumplido** |
+
+Balance honesto: cinco de seis criterios funcionales se cumplen y el sexto, el que más se acerca a lo que distinguiría una mente integrada de una colección de módulos, no. Y en los cinco cumplidos el mecanismo explica el resultado sin resto: el indicador está, la vivencia no está demostrada ni podría estarlo con estos instrumentos. El objetivo 1 sigue abierto. Lo que este bloque deja es un banco de pruebas donde esa pregunta se puede formular con números y donde el siguiente paso está identificado: una arquitectura de decisión por conjunciones que haga a la mente irreducible, y volver a medir los seis criterios sobre ella.
+
 ## 15. Balance de VIDA-1.0 y lo que sigue
 
 Instrumentos disponibles: vidas completas con nacimiento, familia, vejez y muerte; linaje y transmisión medibles; automodelo con conocimiento privado; cinco experimentos reproducibles (memoria, entorno, engaño, decisión, transferencia) con tamaños de efecto. Cada corrección de este bloque salió de una muerte o de un cero inexplicable en una tabla, no de una suposición.
