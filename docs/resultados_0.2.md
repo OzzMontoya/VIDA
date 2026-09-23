@@ -258,7 +258,32 @@ Se acoplaron dos vías: la sorpresa del automodelo y el afecto por la otra perso
 | Caída al quitar todo | 0.453 | 0.456 |
 | Interacción | −0.229 | **−0.282** |
 
-Observación: el acoplamiento hace que cada componente pese más por separado (las creencias pasan de 0.097 a 0.141; la identidad de 0.104 a 0.135), pero quitar todo cuesta exactamente lo mismo. La redundancia aumenta en lugar de desaparecer. Interpretación: la sustituibilidad no está en cómo se escribe la memoria sino en cómo se decide: el motor por reglas suma las contribuciones de memoria, preferencias, relaciones y automodelo en un puntaje, y una suma es por construcción descomponible. Para que exista integración irreducible, la decisión tendría que depender de conjunciones (una memoria que sólo cuenta si el automodelo la avala; una relación que sólo pesa recordada), no de sumas. Es un cambio de arquitectura, no de parámetros, y es el siguiente paso si se quiere perseguir el criterio 6.
+Observación: el acoplamiento hace que cada componente pese más por separado (las creencias pasan de 0.097 a 0.141; la identidad de 0.104 a 0.135), pero quitar todo cuesta exactamente lo mismo. La redundancia aumenta en lugar de desaparecer.
+
+Corrección metodológica (misma fecha): esta medida por caídas del ICI no sirve para decidir irreducibilidad. Con ella, una decisión que dependiera de una *conjunción* de dos componentes daría interacción negativa (quitar cualquiera de los dos destruye la conjunción; quitar ambos la destruye una sola vez), y una decisión con *vías redundantes* daría interacción positiva. Además el ICI está acotado en [0,1] y satura al quitar mucho. Así que el signo de la interacción no distingue módulos independientes de módulos entrelazados. La pregunta correcta, tomada de las teorías de integración de información, es otra: ¿cuánta información sobre la acción tiene el conjunto de componentes que **ninguna bipartición** de la mente conserva? Ese es el proxy de Φ que se mide en §24.
+
+## 24. Integración informacional: proxy de Φ (criterio 6, medida definitiva de este bloque)
+
+Instrumento: `vida integration`. Cada acción registra el estado de seis componentes de la mente al decidir (`EventRecord.mind`): cuerpo (hambre), memoria recuperada (valencia media), automodelo (error reciente), relaciones (afecto medio hacia los presentes), identidad (ambición) y creencias (confianza en dónde hay comida). Ninguna variable depende de la acción elegida: una primera versión usó la predicción del automodelo *para la acción escogida* y dio 0.34 bits al automodelo; era información circular y se retiró. Cada variable se binariza por su mediana; se mide la información mutua con la acción (bits, corregida por 20 permutaciones), para el todo y para las 31 biparticiones de los seis componentes. Φ = información del todo − información de la bipartición que menos pierde (MIP). Pueblo, 30 días, 12 agentes, 8.424 decisiones por semilla.
+
+| | Semilla 1 | Semilla 2 |
+|---|---|---|
+| Entropía de la acción | 2.573 bits | 2.618 bits |
+| Información del todo | 0.176 bits (6.8 %) | 0.164 bits (6.3 %) |
+| Por componente: cuerpo / memoria / automodelo / relaciones / identidad / creencias | 0.052 / 0.009 / 0.003 / 0.076 / 0.009 / 0.019 | 0.058 / 0.014 / 0.004 / 0.074 / 0.012 / 0.016 |
+| Partición de información mínima | memoria+automodelo \| resto → 0.186 | memoria+automodelo \| resto → 0.177 |
+| **Φ conductual** | **−0.010 bits** | **−0.013 bits** |
+| Sinergia sobre el mejor componente aislado | +0.100 bits | +0.091 bits |
+| Agentes con Φ > 0 (de 12) | 1 (+0.002) | 0 |
+
+Lectura:
+
+- **Φ ≈ 0 en las dos semillas y en 23 de 24 agentes.** Separar memoria y automodelo del resto de la mente no pierde información sobre la acción: esos dos componentes, tal como quedan resumidos, no aportan conjunciones con los demás. La conducta es reducible a sus partes. Criterio 6 **no cumplido**, esta vez con la medida correcta.
+- Hay sinergia moderada (+0.09/+0.10 bits) sobre el mejor componente aislado: el conjunto cuerpo+relaciones+identidad+creencias dice más que cualquiera de ellos por separado. Eso es lo esperable de un puntaje aditivo con `argmax`: la acción depende de la combinación, pero la combinación se puede partir sin pérdida.
+- Los seis resúmenes binarios explican sólo el 6-7 % de la entropía de la acción. El resto está en variables no registradas (lugar, hora, existencias visibles, dinero, tipo de necesidad más urgente) y en el desempate aleatorio. Es una limitación de la medida, no un dato sobre la mente: con más variables el estado conjunto crece exponencialmente y el estimador de conteo se vuelve inutilizable con 8.000 muestras.
+- Lo que sí es informativo: el automodelo, medido sin circularidad, tiene 0.003 bits de información sobre la acción. Su influencia en la decisión (`_expectation` sólo penaliza, y la exploración crece con el error) es real pero mínima. Es coherente con §16: quitarlo cambia la coherencia de decisiones en 0.11 de ICI, no más.
+
+Qué haría falta para un Φ positivo: que la decisión dependa de conjunciones entre memoria/automodelo y el resto (por ejemplo, que una memoria sólo cuente cuando el automodelo la avala y que sin ella el afecto no pese), y, sobre todo, una medida con más variables y más muestras (estimadores de información con regularización, o 100 agentes × 30 días). Ambas cosas están fuera de este bloque y quedan como siguiente paso.
 
 ## 23. Estado del objetivo 1 al cierre de este bloque
 
@@ -269,7 +294,7 @@ Observación: el acoplamiento hace que cada componente pese más por separado (l
 | 3. Estados reportados que rastrean variables ocultas | r +0.44/+0.55 dentro de cada agente, 24/24 | Cumplido, mecanismo transparente |
 | 4. Metacognición (sabe cuándo sabe) | 15/15 y 19/19 agentes con sensibilidad positiva, pero el observador externo es más sensible | Cumplido sin acceso privilegiado |
 | 5. Incertidumbre comunicada | r +0.26; los mentirosos declaran la máxima confianza | Débil e invertida en parte |
-| 6. Integración irreducible | Interacción −0.23 y −0.28 tras acoplar | **No cumplido** |
+| 6. Integración irreducible | Φ conductual −0.010 y −0.013 bits (§24); 23/24 agentes con Φ ≤ 0 | **No cumplido** |
 
 Balance honesto: cinco de seis criterios funcionales se cumplen y el sexto, el que más se acerca a lo que distinguiría una mente integrada de una colección de módulos, no. Y en los cinco cumplidos el mecanismo explica el resultado sin resto: el indicador está, la vivencia no está demostrada ni podría estarlo con estos instrumentos. El objetivo 1 sigue abierto. Lo que este bloque deja es un banco de pruebas donde esa pregunta se puede formular con números y donde el siguiente paso está identificado: una arquitectura de decisión por conjunciones que haga a la mente irreducible, y volver a medir los seis criterios sobre ella.
 

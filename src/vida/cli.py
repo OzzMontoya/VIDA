@@ -323,6 +323,30 @@ def cmd_metacognition(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_integration(args: argparse.Namespace) -> int:
+    from vida.evaluation.integration import integration_report, render_integration
+
+    db = _db_path(Path(args.data_dir), args.run)
+    if not db.exists():
+        print(f"No existe la corrida {args.run} en {db.parent}", file=sys.stderr)
+        return 1
+    repo = RunRepository(db)
+    try:
+        if repo.run_meta(args.run) is None:
+            print(f"Corrida no encontrada: {args.run}", file=sys.stderr)
+            return 1
+        events = repo.all_events(args.run)
+    finally:
+        repo.close()
+    report = integration_report(events, k=args.bins, n_features=args.features, n_shuffles=args.shuffles)
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False, indent=1))
+    else:
+        print(f"Corrida {args.run} · integración informacional de la mente (criterio 6)")
+        print(render_integration(report))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="vida", description="VIDA: simulador de vidas artificiales")
     parser.add_argument("--version", action="version", version=f"vida {__version__}")
@@ -385,6 +409,14 @@ def build_parser() -> argparse.ArgumentParser:
     mc.add_argument("--run", required=True)
     mc.add_argument("--json", action="store_true")
     mc.set_defaults(func=cmd_metacognition)
+
+    ig = sub.add_parser("integration", help="criterio 6: información del todo vs. mejor partición de la mente (proxy de Φ)")
+    ig.add_argument("--run", required=True)
+    ig.add_argument("--bins", type=int, default=2, help="niveles por variable al discretizar")
+    ig.add_argument("--features", type=int, default=1, help="variables por componente (1 o 2)")
+    ig.add_argument("--shuffles", type=int, default=20, help="permutaciones para corregir el sesgo")
+    ig.add_argument("--json", action="store_true")
+    ig.set_defaults(func=cmd_integration)
     return parser
 
 

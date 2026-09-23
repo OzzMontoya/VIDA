@@ -47,6 +47,7 @@ class EventRecord(BaseModel):
     decision: DecisionRecord | None = None
     proposal: ActionProposal | None = None
     prediction: dict[str, float] | None = None  # automodelo: p_success propia, baseline poblacional, actual
+    mind: dict[str, float] | None = None  # estado de los componentes de la mente al decidir (criterio 6)
     outcome: ActionOutcome | None = None
     memories_created: list[str] = Field(default_factory=list)
     relationship_deltas: dict[str, dict[str, float]] = Field(default_factory=dict)

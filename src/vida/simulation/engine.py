@@ -33,9 +33,9 @@ from vida.simulation.config import RunConfig, canonical_json, config_hash
 from vida.simulation.events import EventRecord, events_digest, make_event_id
 from vida.simulation.logging import JsonlEventLogger
 from vida.simulation.rng import RngHub
-from vida.world.actions import ActionOutcome, InfoRequest
+from vida.world.actions import ActionOutcome, ActionProposal, InfoRequest
 from vida.world.presets import build_world, spawn_agents
-from vida.world.rules import PURCHASABLE
+from vida.world.rules import FOOD_EFFECTS, PURCHASABLE
 from vida.world.world import World
 
 
@@ -164,6 +164,7 @@ class SimulationEngine:
                     semantic.record_availability(memory, resource, loc.id, loc.stock(resource) > 0, tick)
 
         state_before = agent.summary()
+        mind = self._mind_snapshot(agent, ctx)
         proposal, decision = self.decision_engine.decide(ctx, self.hub.sub("decision", agent.id))
 
         # Petición de información: el otro agente decide su respuesta en este mismo tick.
@@ -186,7 +187,7 @@ class SimulationEngine:
         baseline, base_confidence = self.population_model.table.predict_with_confidence(public_levels)
 
         event = self._next_event("action", agent.id, perception=perception, state_before=state_before,
-                                 retrieved_memory_ids=[m.id for m in ctx.memories], decision=decision, proposal=proposal)
+                                 retrieved_memory_ids=[m.id for m in ctx.memories], decision=decision, proposal=proposal, mind=mind)
         outcome = self.world.resolve(agent, proposal, self.agents, self.hub.sub("world"), tick, event.event_id)
         agent.apply_outcome(outcome)
         matched = agent.self_model.table.has_evidence(levels[0])
@@ -249,6 +250,32 @@ class SimulationEngine:
         event.world_delta = outcome.world_delta
         self._emit(event)
         return event
+
+    def _mind_snapshot(self, agent: AgentState, ctx: DecisionContext) -> dict[str, float]:
+        """Estado de los seis componentes de la mente al decidir (``evaluation/integration.py``, criterio 6).
+
+        Registro observacional: no altera la decisión. Las relaciones se resumen
+        respecto a las personas presentes, a quienes la decisión puede dirigirse.
+        """
+        memories = ctx.memories
+        # Nada de lo registrado puede depender de la acción elegida (sería información circular sobre la acción):
+        # el automodelo se resume por su error reciente y su experiencia, no por la predicción para la acción escogida.
+        present = [agent.relationships[o] for o in ctx.perception.visible_agents if o in agent.relationships]
+        food_conf = max((b.confidence for r in FOOD_EFFECTS for b in agent.beliefs.resources.get(r, {}).values()), default=0.0)
+        return {
+            "hunger": round(agent.needs["hunger"].level, 4),
+            "energy": round(agent.needs["energy"].level, 4),
+            "memory_valence": round(sum(m.valence for m in memories) / len(memories), 4) if memories else 0.0,
+            "memory_n": float(len(memories)),
+            "self_error": round(agent.self_model.recent_error(), 4),
+            "self_n": float(agent.self_model.n),
+            "affection_here": round(sum(r.affection for r in present) / len(present), 4) if present else 0.5,
+            "trust_here": round(sum(r.trust for r in present) / len(present), 4) if present else 0.5,
+            "ambition": round(agent.identity.core_values.get("ambition", 0.5), 4),
+            "honesty": round(agent.identity.core_values.get("honesty", 0.5), 4),
+            "food_belief": round(food_conf, 4),
+            "known_locations": float(len(agent.beliefs.known_locations)),
+        }
 
     # --- fin de tick / día -------------------------------------------------
     def _end_of_tick(self) -> None:
