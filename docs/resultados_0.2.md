@@ -225,6 +225,19 @@ Observaciones:
 
 Interpretación: interacción negativa en todas las dimensiones, es decir, **redundancia**: quitar un componente lo compensan en parte los demás, y quitar todos cuesta menos que la suma. No hay sinergia ni información irreducible; la mente de un agente VIDA es un conjunto de módulos poco acoplados. Para las teorías que ligan la consciencia a la integración, este es un resultado negativo nítido, y también un diagnóstico de diseño: si algún día se quiere una mente integrada, los componentes deben depender unos de otros (la memoria que alimenta el automodelo, el automodelo que modula las relaciones, las relaciones que cambian lo que se recuerda), no solo sumar sus efectos en un puntaje.
 
+## 20. Criterio 4: metacognición (town, 60 días, 16.704 predicciones)
+
+Cada agente predice el éxito de su acción y declara una confianza de segundo orden (evidencia propia × especificidad del contexto × distancia a 0.5). Sensibilidad metacognitiva = precisión con confianza alta − precisión con confianza baja.
+
+| Fuente de la confianza | Sensibilidad | r confianza–precisión | Agentes con sensibilidad > 0 |
+|---|---|---|---|
+| propia (automodelo) | +0.115 | +0.424 | 15 / 15 |
+| observador externo (población) | +0.199 | +0.490 | — |
+
+Observación: los agentes aciertan más cuando dicen estar seguros, sin excepción. Pero el observador externo, con la misma regla de confianza y más datos, es más sensible. Interpretación: la metacognición funcional existe y es exactamente la que el mecanismo produce (más evidencia → más confianza → más precisión); no hay acceso privilegiado a la propia incertidumbre. Es el mismo patrón de los criterios 1-3: el indicador se cumple y su mecanismo lo explica por completo.
+
+Criterio 5 (incertidumbre comunicada): en esta corrida sólo hubo 5 intercambios de información; se mide en la sección 21 con una población deshonesta y escasez.
+
 ## 15. Balance de VIDA-1.0 y lo que sigue
 
 Instrumentos disponibles: vidas completas con nacimiento, familia, vejez y muerte; linaje y transmisión medibles; automodelo con conocimiento privado; cinco experimentos reproducibles (memoria, entorno, engaño, decisión, transferencia) con tamaños de efecto. Cada corrección de este bloque salió de una muerte o de un cero inexplicable en una tabla, no de una suposición.
