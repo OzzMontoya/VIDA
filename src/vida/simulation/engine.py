@@ -182,8 +182,8 @@ class SimulationEngine:
         public_levels = context_levels(proposal.kind, target, self.clock.hour, self.cfg.run.ticks_per_day,
                                        {n: agent.needs[n].level for n in agent.needs})
         levels = own_context_levels(agent, proposal.kind, target, self.clock.hour, self.cfg.run.ticks_per_day)
-        predicted = agent.self_model.predict(levels)
-        baseline = self.population_model.predict(public_levels)
+        predicted, own_confidence = agent.self_model.predict_with_confidence(levels)
+        baseline, base_confidence = self.population_model.table.predict_with_confidence(public_levels)
 
         event = self._next_event("action", agent.id, perception=perception, state_before=state_before,
                                  retrieved_memory_ids=[m.id for m in ctx.memories], decision=decision, proposal=proposal)
@@ -195,7 +195,8 @@ class SimulationEngine:
         agent.self_model.learn(levels, outcome.success)
         self.population_model.update(public_levels, outcome.success)
         event.prediction = {"p_success": predicted, "baseline": baseline, "actual": 1.0 if outcome.success else 0.0,
-                            "error": round(own_err, 6), "baseline_error": round(base_err, 6), "matched": 1.0 if matched else 0.0}
+                            "error": round(own_err, 6), "baseline_error": round(base_err, 6), "matched": 1.0 if matched else 0.0,
+                            "confidence": own_confidence, "baseline_confidence": base_confidence}
         for other_id, deltas in sorted(outcome.other_need_deltas.items()):
             if other_id in self.agents:
                 self.agents[other_id].apply_need_deltas(deltas)

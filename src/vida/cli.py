@@ -298,6 +298,31 @@ def cmd_society(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_metacognition(args: argparse.Namespace) -> int:
+    from vida.evaluation.metacognition import communicated_uncertainty, metacognition_report, render_metacognition
+
+    db = _db_path(Path(args.data_dir), args.run)
+    if not db.exists():
+        print(f"No existe la corrida {args.run} en {db.parent}", file=sys.stderr)
+        return 1
+    repo = RunRepository(db)
+    try:
+        if repo.run_meta(args.run) is None:
+            print(f"Corrida no encontrada: {args.run}", file=sys.stderr)
+            return 1
+        events = repo.all_events(args.run)
+    finally:
+        repo.close()
+    report = metacognition_report(events)
+    comm = communicated_uncertainty(events)
+    if args.json:
+        print(json.dumps({"metacognition": report, "communicated_uncertainty": comm}, ensure_ascii=False, indent=1))
+    else:
+        print(f"Corrida {args.run} · metacognición e incertidumbre comunicada")
+        print(render_metacognition(report, comm))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="vida", description="VIDA: simulador de vidas artificiales")
     parser.add_argument("--version", action="version", version=f"vida {__version__}")
@@ -355,6 +380,11 @@ def build_parser() -> argparse.ArgumentParser:
     so.add_argument("--run", required=True)
     so.add_argument("--json", action="store_true")
     so.set_defaults(func=cmd_society)
+
+    mc = sub.add_parser("metacognition", help="criterio 4 (sabe cuándo sabe) y criterio 5 (incertidumbre comunicada)")
+    mc.add_argument("--run", required=True)
+    mc.add_argument("--json", action="store_true")
+    mc.set_defaults(func=cmd_metacognition)
     return parser
 
 

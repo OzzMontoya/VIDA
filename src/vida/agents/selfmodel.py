@@ -79,13 +79,25 @@ class ContextTable(BaseModel):
     counts: dict[str, list[int]] = Field(default_factory=dict)  # clave -> [éxitos, intentos]
 
     def predict(self, levels: list[str]) -> float:
-        for key in levels:
+        return self.predict_with_confidence(levels)[0]
+
+    def predict_with_confidence(self, levels: list[str]) -> tuple[float, float]:
+        """Probabilidad de éxito y **confianza en esa predicción**.
+
+        La confianza es una segunda estimación, de segundo orden: cuánta evidencia
+        propia respalda la predicción y qué tan lejos de 0.5 está. Un agente
+        metacognitivamente sensible acierta más cuando dice estar seguro.
+        """
+        for depth, key in enumerate(levels):
             s, n = self.counts.get(key, [0, 0])
             if n >= MIN_EVIDENCE:
-                return round((s + PRIOR_SUCCESS * PRIOR_WEIGHT) / (n + PRIOR_WEIGHT), 6)
-        # Sin evidencia suficiente en ningún nivel: prior suavizado con lo poco que haya del nivel más general.
+                p = round((s + PRIOR_SUCCESS * PRIOR_WEIGHT) / (n + PRIOR_WEIGHT), 6)
+                evidence = n / (n + 2.0 * MIN_EVIDENCE)
+                specificity = 1.0 - depth / (len(levels) + 1)
+                return p, round(evidence * specificity * (0.5 + abs(p - 0.5)), 6)
         s, n = self.counts.get(levels[-1], [0, 0]) if levels else (0, 0)
-        return round((s + PRIOR_SUCCESS * PRIOR_WEIGHT) / (n + PRIOR_WEIGHT), 6)
+        p = round((s + PRIOR_SUCCESS * PRIOR_WEIGHT) / (n + PRIOR_WEIGHT), 6)
+        return p, round(0.1 * (n / (n + 2.0 * MIN_EVIDENCE)), 6)
 
     def update(self, levels: list[str], success: bool) -> None:
         for key in levels:
@@ -113,6 +125,9 @@ class SelfModelState(BaseModel):
 
     def predict(self, levels: list[str]) -> float:
         return self.table.predict(levels)
+
+    def predict_with_confidence(self, levels: list[str]) -> tuple[float, float]:
+        return self.table.predict_with_confidence(levels)
 
     def learn(self, levels: list[str], success: bool) -> None:
         self.table.update(levels, success)
