@@ -238,6 +238,16 @@ Observación: los agentes aciertan más cuando dicen estar seguros, sin excepci�
 
 Criterio 5 (incertidumbre comunicada): en esta corrida sólo hubo 5 intercambios de información; se mide en la sección 21 con una población deshonesta y escasez.
 
+## 21. Criterio 5: incertidumbre comunicada (town, 30 días, honestidad inicial 0.1, escasez; 270 respuestas)
+
+| Intención (libro del mundo) | n | Confianza declarada media | Fracción verdadera |
+|---|---|---|---|
+| verdad | 177 | 0.52 | 0.23 |
+| parcial | 35 | 0.50 | 0.17 |
+| mentira | 58 | 0.90 | 0.00 |
+
+Correlación entre confianza declarada y verdad: r = +0.26. Observación: la confianza comunicada es informativa pero débil, y por una razón concreta: los mentirosos declaran la confianza más alta (0.90) y nunca aciertan, mientras que quien dice la verdad declara su confianza real (0.52) y, con escasez, acierta sólo una de cada cuatro veces porque sus creencias están desactualizadas. Un receptor racional debería aprender a invertir la señal: en esta sociedad, la seguridad extrema es marca de engaño. Con esta corrida también se repitió el criterio 4: sensibilidad propia +0.157 (19/19 agentes) frente a +0.220 del observador externo, mismo patrón.
+
 ## 15. Balance de VIDA-1.0 y lo que sigue
 
 Instrumentos disponibles: vidas completas con nacimiento, familia, vejez y muerte; linaje y transmisión medibles; automodelo con conocimiento privado; cinco experimentos reproducibles (memoria, entorno, engaño, decisión, transferencia) con tamaños de efecto. Cada corrección de este bloque salió de una muerte o de un cero inexplicable en una tabla, no de una suposición.
