@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use VIDA, please cite it as below."
+title: "VIDA: Artificial Life, Identity and Agent Development. A reproducible multi-agent simulator with operational criteria for machine consciousness"
+type: software
+authors:
+  - family-names: Montoya Mares
+    given-names: Oziel Atlahi
+    affiliation: Universidad Tecnológica Metropolitana de Aguascalientes (UTMA)
+version: 1.0.0a0
+date-released: 2026-10-19
+license: MIT
+repository-code: https://github.com/OzzMontoya/VIDA
+keywords:
+  - artificial consciousness
+  - artificial life
+  - agent-based simulation
+  - integrated information
+  - self-model
+  - metacognition
+  - reproducibility

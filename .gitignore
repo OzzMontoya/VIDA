@@ -20,3 +20,6 @@ logs/
 .idea/
 desktop.ini
 Thumbs.db
+
+# Caché del LLM y salidas de experimentos
+data/
